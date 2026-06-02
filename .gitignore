@@ -1,0 +1,23 @@
+# --- Swift / Vapor (server/) ---
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj
+DerivedData/
+.env
+.env.*
+db.sqlite
+
+# --- Node / React Native (app/) ---
+node_modules/
+.expo/
+*.log
+npm-debug.*
+yarn-error.*
+
+# --- macOS ---
+.DS_Store
+
+# --- IDE ---
+.vscode/
+.idea/
