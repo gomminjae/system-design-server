@@ -11,6 +11,9 @@ public func configure(_ app: Application) async throws {
     // Leaf를 뷰 렌더러로 사용 (어드민 SSR 페이지용)
     app.views.use(.leaf)
 
+    // 인메모리 캐시 (카탈로그·화면·버전 응답 캐싱용)
+    app.caches.use(.memory)
+
     app.migrations.add(CreateTong())
 
     // 번들 스토리지 (로컬 디스크)
@@ -20,6 +23,7 @@ public func configure(_ app: Application) async throws {
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAppVersion())
+    app.migrations.add(CreateScreen())
 
     // JWT 서명 키 (개발용 HMAC, 운영은 RSA/EC로 교체)
     let jwtSecret = Environment.get("JWT_SECRET") ?? "dev-jwt-secret-tongstongs"

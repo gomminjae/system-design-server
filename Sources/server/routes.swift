@@ -33,6 +33,7 @@ func routes(_ app: Application) throws {
     try api.register(collection: SubmissionController())
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
+    try api.register(collection: ScreenController())
 
     // 번들 파일 서빙 (공개, HTML/JS/CSS)
     try app.register(collection: BundleServingController())
@@ -46,4 +47,5 @@ func routes(_ app: Application) throws {
     let admin = app.grouped(AdminBasicAuthMiddleware(username: adminUser, password: adminPassword))
     try admin.register(collection: AdminController())
     try admin.register(collection: AppAdminController())
+    try admin.register(collection: ScreenAdminController())
 }

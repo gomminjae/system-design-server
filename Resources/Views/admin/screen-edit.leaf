@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>통스통스 · 화면 편집</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 16px; color: #222; }
+    a { color: #3498db; text-decoration: none; }
+    .nav { margin-bottom: 16px; font-size: 14px; max-width: 1100px; margin: 0 auto 16px; }
+    .nav a { margin-right: 16px; }
+    h1 { font-size: 22px; }
+    button { padding: 7px 16px; border-radius: 8px; border: 0; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #3498db; color: #fff; }
+    .btn-success { background: #2ecc71; color: #fff; }
+    .btn-danger { background: #e74c3c; color: #fff; }
+    .btn-small { padding: 5px 12px; font-size: 13px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .badge.published { background: #2ecc71; color: #fff; }
+    .badge.draft { background: #bdc3c7; color: #fff; }
+    .layout { display: flex; gap: 24px; max-width: 1100px; margin: 0 auto; }
+    .editor { flex: 1; min-width: 0; }
+    .preview-wrap { width: 375px; flex-shrink: 0; position: sticky; top: 16px; align-self: flex-start; }
+    .toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+    .toolbar .spacer { flex: 1; }
+    .section-item { border: 1px solid #e4e4e4; border-radius: 12px; padding: 12px 16px; margin: 8px 0; background: #fff; display: flex; align-items: center; gap: 12px; }
+    .section-item .handle { cursor: grab; font-size: 18px; color: #999; user-select: none; }
+    .section-item .handle:active { cursor: grabbing; }
+    .section-item .info { flex: 1; }
+    .section-item .info h4 { margin: 0 0 2px; font-size: 15px; }
+    .section-item .info p { margin: 0; color: #999; font-size: 13px; }
+    .section-item .actions { display: flex; gap: 6px; }
+    .sortable-ghost { opacity: 0.4; }
+    .type-picker { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    .type-picker-label { width: 100%; font-size: 12px; color: #999; margin-top: 8px; }
+    .type-btn { padding: 8px 16px; border: 2px solid #e4e4e4; border-radius: 10px; cursor: pointer; font-size: 14px; background: #fff; }
+    .type-btn:hover { border-color: #3498db; }
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; }
+    .modal.show { display: flex; align-items: center; justify-content: center; }
+    .modal-body { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+    .modal-body h3 { margin: 0 0 16px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .field textarea { height: 80px; resize: vertical; }
+    .slide-card { border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fafafa; }
+
+    /* 프리뷰 */
+    .phone { width: 375px; height: 720px; border: 3px solid #222; border-radius: 40px; overflow: hidden; background: #f8f8f8; position: relative; }
+    .phone-notch { width: 120px; height: 28px; background: #222; border-radius: 0 0 16px 16px; margin: 0 auto; }
+    .phone-screen { height: calc(100% - 28px); overflow-y: auto; }
+    .phone-screen::-webkit-scrollbar { display: none; }
+
+    .pv-carousel { position: relative; height: 200px; overflow: hidden; }
+    .pv-carousel .slide { height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; color: #fff; }
+    .pv-carousel .slide img { position: absolute; top: 0; left: 0; width: 100%; height: 200px; object-fit: cover; }
+    .pv-carousel .slide-text { position: relative; z-index: 1; }
+    .pv-carousel .slide h3 { margin: 0; font-size: 20px; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .pv-carousel .slide p { margin: 4px 0 0; font-size: 14px; opacity: 0.9; }
+    .pv-carousel .dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2; }
+    .pv-carousel .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+    .pv-carousel .dot.active { background: #fff; }
+
+    .pv-header { padding: 16px 16px 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .pv-header h4 { margin: 0; font-size: 17px; }
+    .pv-header .sub { margin: 2px 0 0; font-size: 13px; color: #999; }
+    .pv-header span { font-size: 13px; color: #3498db; }
+
+    .pv-hscroll { display: flex; gap: 10px; overflow-x: auto; padding: 0 16px 12px; }
+    .pv-hscroll::-webkit-scrollbar { display: none; }
+    .pv-card { width: 120px; flex-shrink: 0; }
+    .pv-card .thumb { width: 120px; height: 120px; background: #e0e0e0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 24px; overflow: hidden; }
+    .pv-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .pv-card h5 { margin: 6px 0 2px; font-size: 13px; }
+    .pv-card p { margin: 0; font-size: 11px; color: #999; }
+    .pv-card .badge { display: inline-block; background: #e74c3c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 4px; margin-top: 3px; }
+
+    .pv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 12px; }
+    .pv-grid .pv-card { width: auto; }
+    .pv-grid .thumb { width: 100%; height: 100px; }
+
+    .pv-chips { display: flex; gap: 8px; padding: 8px 16px; overflow-x: auto; }
+    .pv-chips::-webkit-scrollbar { display: none; }
+    .pv-chip { padding: 6px 14px; border-radius: 16px; font-size: 13px; white-space: nowrap; }
+    .pv-chip.active { background: #222; color: #fff; }
+    .pv-chip.inactive { background: #eee; color: #666; }
+
+    .pv-divider { margin: 0; border: none; }
+    .pv-cta { padding: 12px 16px; }
+    .pv-cta .btn { display: block; width: 100%; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; text-align: center; }
+    .pv-cta .btn.primary { background: #3498db; color: #fff; }
+    .pv-cta .btn.secondary { background: #eee; color: #222; }
+
+    .pv-detail { padding: 16px; text-align: center; }
+    .pv-detail .thumb-lg { width: 100%; height: 200px; background: #e0e0e0; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 32px; overflow: hidden; }
+    .pv-detail .thumb-lg img { width: 100%; height: 100%; object-fit: cover; }
+    .pv-detail h3 { margin: 0 0 4px; font-size: 20px; }
+    .pv-detail .sub { color: #666; font-size: 14px; margin: 0 0 8px; }
+    .pv-detail .stats { color: #999; font-size: 13px; margin: 0 0 20px; }
+
+    .pv-tong-card { margin: 0 16px 12px; border: 1px solid #e4e4e4; border-radius: 12px; padding: 12px; display: flex; gap: 12px; align-items: center; }
+    .pv-tong-card .thumb-sm { width: 60px; height: 60px; background: #e0e0e0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; overflow: hidden; flex-shrink: 0; }
+    .pv-tong-card .thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
+    .pv-tong-card h5 { margin: 0 0 2px; font-size: 14px; }
+    .pv-tong-card p { margin: 0; font-size: 12px; color: #999; }
+    .pv-tong-card .badge { display: inline-block; background: #e74c3c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 4px; }
+
+    .pv-empty { padding: 40px 16px; text-align: center; color: #ccc; font-size: 14px; }
+
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; }
+      .preview-wrap { width: 100%; position: static; display: flex; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="/admin">심사 큐</a>
+    <a href="/admin/screens">화면 관리</a>
+    <span> › <b id="screen-title-nav">편집</b></span>
+  </div>
+  <div class="layout">
+    <div class="editor">
+      <h1 id="page-title">화면 편집</h1>
+      <div class="toolbar">
+        <span class="badge" id="publish-badge">로딩중</span>
+        <div class="spacer"></div>
+        <button class="btn-small btn-success" id="publish-btn" onclick="togglePublish()">발행</button>
+        <button class="btn-small btn-primary" onclick="save()">저장</button>
+      </div>
+      <div id="section-list"></div>
+      <div style="margin-top: 12px;">
+        <button class="btn-primary" onclick="showAddSection()">+ 섹션 추가</button>
+      </div>
+      <div id="add-section-area" style="display:none;">
+        <div class="type-picker">
+          <div class="type-picker-label">섹션</div>
+          <div class="type-btn" onclick="addSection('carousel')">🎠 캐러셀</div>
+          <div class="type-btn" onclick="addSection('tong_list')">📋 통 리스트</div>
+          <div class="type-btn" onclick="addSection('category_chips')">🏷 카테고리</div>
+          <div class="type-btn" onclick="addSection('tong_detail')">📄 통 상세</div>
+          <div class="type-picker-label">공통 컴포넌트</div>
+          <div class="type-btn" onclick="addSection('section_header')">📌 헤더</div>
+          <div class="type-btn" onclick="addSection('divider')">➖ 구분선</div>
+          <div class="type-btn" onclick="addSection('cta_button')">🔘 CTA 버튼</div>
+          <div class="type-btn" onclick="addSection('tong_card')">🃏 통 카드</div>
+        </div>
+      </div>
+    </div>
+    <div class="preview-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" id="preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="edit-modal">
+    <div class="modal-body">
+      <h3 id="modal-title">섹션 편집</h3>
+      <div id="modal-fields"></div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn-primary" onclick="saveSection()">확인</button>
+        <button onclick="closeModal()">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const screenId = '#(screenId)';
+    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
+    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+    let screenData = null;
+    let sections = [];
+    let editingIndex = -1;
+
+    const TYPE_LABELS = {
+      carousel: '🎠 캐러셀', tong_list: '📋 통 리스트', category_chips: '🏷 카테고리',
+      tong_detail: '📄 통 상세', section_header: '📌 헤더', divider: '➖ 구분선',
+      cta_button: '🔘 CTA 버튼', tong_card: '🃏 통 카드'
+    };
+
+    async function load() {
+      const res = await fetch('/admin/api/screens/' + screenId, { headers });
+      screenData = await res.json();
+      sections = screenData.sections || [];
+      document.getElementById('page-title').textContent = screenData.title + ' 편집';
+      document.getElementById('screen-title-nav').textContent = screenData.title;
+      updatePublishBadge(screenData.isPublished);
+      render();
+    }
+
+    function updatePublishBadge(pub) {
+      const b = document.getElementById('publish-badge');
+      b.textContent = pub ? '발행중' : '미발행';
+      b.className = 'badge ' + (pub ? 'published' : 'draft');
+      document.getElementById('publish-btn').textContent = pub ? '비발행' : '발행';
+    }
+
+    function render() {
+      const list = document.getElementById('section-list');
+      list.innerHTML = sections.map((s, i) => `
+        <div class="section-item" data-index="${i}">
+          <span class="handle">☰</span>
+          <div class="info"><h4>${TYPE_LABELS[s.type] || s.type}</h4><p>${summary(s)}</p></div>
+          <div class="actions">
+            <button class="btn-small" onclick="editSection(${i})">편집</button>
+            <button class="btn-small btn-danger" onclick="removeSection(${i})">삭제</button>
+          </div>
+        </div>`).join('');
+      new Sortable(list, { handle: '.handle', ghostClass: 'sortable-ghost', animation: 200,
+        onEnd: e => { sections.splice(e.newIndex, 0, sections.splice(e.oldIndex, 1)[0]); renderPreview(); }
+      });
+      renderPreview();
+    }
+
+    function summary(s) {
+      const d = s.data || {};
+      switch (s.type) {
+        case 'carousel': return (d.slides||[]).length + '장 · ' + (d.duration||3000) + 'ms';
+        case 'tong_list': return (d.headerTitle||'(제목 없음)') + ' · ' + (d.layout||'grid');
+        case 'category_chips': return (d.chips||[]).map(c=>c.label).join(', ') || '(없음)';
+        case 'tong_detail': return d.title || '(제목 없음)';
+        case 'section_header': return d.headerTitle || '(제목 없음)';
+        case 'divider': return (d.height||8) + 'px';
+        case 'cta_button': return d.buttonLabel || '(라벨 없음)';
+        case 'tong_card': return d.title || '(제목 없음)';
+        default: return '';
+      }
+    }
+
+    // ===== 프리뷰 =====
+    function renderPreview() {
+      const pv = document.getElementById('preview');
+      if (!sections.length) { pv.innerHTML = '<div class="pv-empty">섹션을 추가하세요</div>'; return; }
+      pv.innerHTML = sections.map(pvSection).join('');
+    }
+
+    function pvSection(s) {
+      const d = s.data || {};
+      switch (s.type) {
+        case 'carousel': return pvCarousel(d);
+        case 'tong_list': return pvTongList(d);
+        case 'category_chips': return pvChips(d);
+        case 'tong_detail': return pvDetail(d);
+        case 'section_header': return pvHeader(d);
+        case 'divider': return `<div class="pv-divider" style="height:${d.height||8}px;background:${d.color||'#f0f0f0'}"></div>`;
+        case 'cta_button': return `<div class="pv-cta"><div class="btn ${d.buttonStyle||'primary'}">${d.buttonLabel||'버튼'}</div></div>`;
+        case 'tong_card': return pvTongCard(d);
+        default: return '';
+      }
+    }
+
+    function pvCarousel(d) {
+      const slides = d.slides && d.slides.length ? d.slides : [{ title: '배너 제목', subtitle: '부제목' }];
+      const first = slides[0];
+      const dots = slides.map((_,i) => `<div class="dot ${i===0?'active':''}"></div>`).join('');
+      return `<div class="pv-carousel">
+        <div class="slide">${first.imageURL ? `<img src="${first.imageURL}">` : ''}
+          <div class="slide-text"><h3>${first.title||''}</h3>${first.subtitle?`<p>${first.subtitle}</p>`:''}</div>
+        </div>
+        <div class="dots">${dots}</div>
+      </div>`;
+    }
+
+    function pvHeader(d) {
+      return `<div class="pv-header"><div><h4>${d.headerTitle||'제목'}</h4>${d.headerSubtitle?`<p class="sub">${d.headerSubtitle}</p>`:''}</div>${d.showMoreText?`<span>${d.showMoreText} ›</span>`:''}</div>`;
+    }
+
+    function pvTongList(d) {
+      const items = d.items && d.items.length ? d.items : [{title:'샘플 1'},{title:'샘플 2'},{title:'샘플 3'}];
+      const header = pvHeader(d);
+      const cards = items.map(it => `<div class="pv-card">
+        <div class="thumb">${it.thumbURL?`<img src="${it.thumbURL}">`:''}</div>
+        <h5>${it.title||''}</h5><p>${it.subtitle||''}</p>
+        ${it.badge?`<span class="badge">${it.badge}</span>`:''}
+      </div>`).join('');
+      return d.layout === 'horizontal_scroll'
+        ? `${header}<div class="pv-hscroll">${cards}</div>`
+        : `${header}<div class="pv-grid">${cards}</div>`;
+    }
+
+    function pvChips(d) {
+      const chips = d.chips && d.chips.length ? d.chips : [{id:'all',label:'전체'}];
+      return `<div class="pv-chips">${chips.map(c => `<div class="pv-chip ${c.id===(d.selectedId||chips[0].id)?'active':'inactive'}">${c.label}</div>`).join('')}</div>`;
+    }
+
+    function pvDetail(d) {
+      return `<div class="pv-detail">
+        <div class="thumb-lg">${d.thumbURL?`<img src="${d.thumbURL}">`:''}</div>
+        <h3>${d.title||'제목'}</h3><p class="sub">${d.subtitle||''}</p><p class="stats">${d.stats||''}</p>
+        <div class="btn primary" style="display:block;width:100%;padding:14px;background:#3498db;color:#fff;border-radius:12px;font-size:16px;font-weight:600;text-align:center;">${d.buttonText||'시작하기'}</div>
+        ${d.shareText?`<span style="display:block;margin-top:12px;color:#3498db;font-size:14px;">${d.shareText}</span>`:''}
+      </div>`;
+    }
+
+    function pvTongCard(d) {
+      return `<div class="pv-tong-card">
+        <div class="thumb-sm">${d.thumbURL?`<img src="${d.thumbURL}">`:''}</div>
+        <div><h5>${d.title||'제목'}</h5><p>${d.subtitle||''}</p>${d.badge?`<span class="badge">${d.badge}</span>`:''}</div>
+      </div>`;
+    }
+
+    // ===== 에디터 =====
+    function showAddSection() { document.getElementById('add-section-area').style.display = 'block'; }
+    function addSection(type) {
+      sections.push({ id: crypto.randomUUID(), type, data: {}, action: null });
+      document.getElementById('add-section-area').style.display = 'none';
+      render(); editSection(sections.length - 1);
+    }
+    function removeSection(i) { if (confirm('삭제하시겠습니까?')) { sections.splice(i,1); render(); } }
+
+    function editSection(i) {
+      editingIndex = i;
+      const s = sections[i], d = s.data||{}, a = s.action||{};
+      document.getElementById('modal-title').textContent = (TYPE_LABELS[s.type]||s.type) + ' 편집';
+      let h = '';
+      switch (s.type) {
+        case 'carousel':
+          h = `<div id="slides-container">${(d.slides||[]).map((sl,si) => slideCard(si, sl)).join('')}</div>
+            <button type="button" class="btn-small btn-primary" onclick="addSlideCard()" style="margin:8px 0 16px;">+ 슬라이드 추가</button>
+            ${field('duration','자동 슬라이드 (ms)', d.duration||3000)}`;
+          break;
+        case 'tong_list':
+          h = `${field('headerTitle','헤더 제목',d.headerTitle)}${field('headerSubtitle','헤더 부제목',d.headerSubtitle)}${sel('layout','레이아웃',d.layout,['horizontal_scroll','grid'])}${field('showMoreText','더보기 텍스트',d.showMoreText)}${field('actionRoute','더보기 경로',a.route)}`;
+          break;
+        case 'category_chips':
+          h = `${field('chips','칩 (id:라벨, 쉼표 구분)', (d.chips||[]).map(c=>c.id+':'+c.label).join(', '))}${field('selectedId','기본 선택 ID',d.selectedId)}`;
+          break;
+        case 'tong_detail':
+          h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbURL','썸네일 URL',d.thumbURL)}${field('stats','통계',d.stats)}${field('buttonText','버튼 텍스트',d.buttonText)}${field('shareText','공유 텍스트',d.shareText)}${field('bundleURL','번들 URL',d.bundleURL)}`;
+          break;
+        case 'section_header':
+          h = `${field('headerTitle','제목',d.headerTitle)}${field('headerSubtitle','부제목',d.headerSubtitle)}${field('showMoreText','더보기 텍스트',d.showMoreText)}${field('actionRoute','더보기 경로',a.route)}`;
+          break;
+        case 'divider':
+          h = `${field('height','높이 (px)',d.height||8)}${field('color','색상',d.color||'#f0f0f0')}`;
+          break;
+        case 'cta_button':
+          h = `${field('buttonLabel','라벨',d.buttonLabel)}${sel('buttonStyle','스타일',d.buttonStyle,['primary','secondary'])}${field('actionRoute','이동 경로',a.route)}`;
+          break;
+        case 'tong_card':
+          h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbURL','썸네일 URL',d.thumbURL)}${field('badge','뱃지',d.badge)}`;
+          break;
+      }
+      document.getElementById('modal-fields').innerHTML = h;
+      document.getElementById('edit-modal').classList.add('show');
+    }
+
+    function field(n,l,v) { return `<div class="field"><label>${l}</label><input name="${n}" value="${v||''}"></div>`; }
+    function textarea(n,l,v) { return `<div class="field"><label>${l}</label><textarea name="${n}">${v||''}</textarea></div>`; }
+
+    function slideCard(idx, sl) {
+      sl = sl || { imageURL: '', title: '', subtitle: '' };
+      return `<div class="slide-card" data-idx="${idx}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <strong style="font-size:13px;">슬라이드 ${idx+1}</strong>
+          <button type="button" class="btn-small btn-danger" onclick="removeSlideCard(this)" style="padding:3px 8px;font-size:11px;">삭제</button>
+        </div>
+        <div class="field"><label>이미지 URL</label><input data-field="imageURL" value="${sl.imageURL||''}"></div>
+        <div class="field"><label>제목</label><input data-field="title" value="${sl.title||''}"></div>
+        <div class="field"><label>부제목</label><input data-field="subtitle" value="${sl.subtitle||''}"></div>
+      </div>`;
+    }
+    function addSlideCard() {
+      const c = document.getElementById('slides-container');
+      const idx = c.querySelectorAll('.slide-card').length;
+      c.insertAdjacentHTML('beforeend', slideCard(idx, null));
+    }
+    function removeSlideCard(btn) {
+      btn.closest('.slide-card').remove();
+      document.querySelectorAll('.slide-card').forEach((el,i) => el.querySelector('strong').textContent = '슬라이드 '+(i+1));
+    }
+    function sel(n,l,v,opts) { return `<div class="field"><label>${l}</label><select name="${n}">${opts.map(o=>`<option value="${o}" ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`; }
+    function val(n) { const e = document.querySelector(`[name="${n}"]`); return e ? e.value.trim() : ''; }
+
+    function saveSection() {
+      const s = sections[editingIndex], d = s.data || {};
+      switch (s.type) {
+        case 'carousel':
+          const slideEls = document.querySelectorAll('.slide-card');
+          const slides = Array.from(slideEls).map(el => ({
+            imageURL: el.querySelector('[data-field="imageURL"]').value.trim(),
+            title: el.querySelector('[data-field="title"]').value.trim() || null,
+            subtitle: el.querySelector('[data-field="subtitle"]').value.trim() || null,
+            action: null
+          }));
+          s.data = { slides, duration: parseInt(val('duration'))||3000 };
+          break;
+        case 'tong_list':
+          s.data = { headerTitle: val('headerTitle'), headerSubtitle: val('headerSubtitle'), layout: val('layout'), showMoreText: val('showMoreText'), items: d.items||[] };
+          s.action = val('actionRoute') ? { type: 'navigate', route: val('actionRoute') } : null;
+          break;
+        case 'category_chips':
+          const chips = val('chips').split(',').map(t=>t.trim()).filter(Boolean).map(t => { const [id,label] = t.split(':'); return { id: id.trim(), label: (label||id).trim() }; });
+          s.data = { chips, selectedId: val('selectedId') };
+          break;
+        case 'tong_detail':
+          s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbURL: val('thumbURL'), stats: val('stats'), buttonText: val('buttonText'), shareText: val('shareText'), bundleURL: val('bundleURL') };
+          s.action = val('tongId') ? { type: 'open_webview', tongId: val('tongId'), bundleURL: val('bundleURL') } : null;
+          break;
+        case 'section_header':
+          s.data = { headerTitle: val('headerTitle'), headerSubtitle: val('headerSubtitle'), showMoreText: val('showMoreText') };
+          s.action = val('actionRoute') ? { type: 'navigate', route: val('actionRoute') } : null;
+          break;
+        case 'divider':
+          s.data = { height: parseInt(val('height'))||8, color: val('color')||'#f0f0f0' };
+          break;
+        case 'cta_button':
+          s.data = { buttonLabel: val('buttonLabel'), buttonStyle: val('buttonStyle') };
+          s.action = val('actionRoute') ? { type: 'navigate', route: val('actionRoute') } : null;
+          break;
+        case 'tong_card':
+          s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbURL: val('thumbURL'), badge: val('badge') };
+          s.action = val('tongId') ? { type: 'open_tong', tongId: val('tongId') } : null;
+          break;
+      }
+      closeModal(); render();
+    }
+
+    function closeModal() { document.getElementById('edit-modal').classList.remove('show'); editingIndex = -1; }
+
+    async function save() {
+      await fetch('/admin/api/screens', { method: 'POST', headers, body: JSON.stringify({ screenId, title: screenData.title, sections }) });
+      alert('저장되었습니다.');
+    }
+    async function togglePublish() {
+      const res = await fetch('/admin/api/screens/' + screenId + '/publish', { method: 'PUT', headers });
+      updatePublishBadge((await res.json()).isPublished);
+    }
+
+    load();
+  </script>
+</body>
+</html>

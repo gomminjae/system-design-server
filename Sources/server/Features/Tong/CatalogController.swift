@@ -14,7 +14,11 @@ struct CatalogController: RouteCollection {
 
     @Sendable
     func catalog(req: Request) async throws -> APIResponse<[TongDTO]> {
+        if let cached = try await req.cache.get([TongDTO].self) {
+            return APIResponse(cached)
+        }
         let tongs = try await req.tongService.catalog()
+        try await req.cache.set(tongs, expiresIn: .seconds(60))
         return APIResponse(tongs)
     }
 }

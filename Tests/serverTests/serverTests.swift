@@ -19,66 +19,50 @@ struct serverTests {
         }
         try await app.asyncShutdown()
     }
-    
-    @Test("Test Hello World Route")
-    func helloWorld() async throws {
+
+    @Test("Health check")
+    func healthCheck() async throws {
         try await withApp { app in
-            try await app.testing().test(.GET, "hello", afterResponse: { res async in
+            try await app.testing().test(.GET, "health", afterResponse: { res async in
                 #expect(res.status == .ok)
-                #expect(res.body.string == "Hello, world!")
+                #expect(res.body.string == "ok")
             })
         }
     }
-    
-    @Test("Getting all the Todos")
-    func getAllTodos() async throws {
+
+    @Test("Catalog returns empty array initially")
+    func catalogEmpty() async throws {
         try await withApp { app in
-            let sampleTodos = [Todo(title: "sample1"), Todo(title: "sample2")]
-            try await sampleTodos.create(on: app.db)
-            
-            try await app.testing().test(.GET, "todos", afterResponse: { res async throws in
+            try await app.testing().test(.GET, "catalog", afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                #expect(try
-                    res.content.decode([TodoDTO].self).sorted(by: { ($0.title ?? "") < ($1.title ?? "") }) ==
-                    sampleTodos.map { $0.toDTO() }.sorted(by: { ($0.title ?? "") < ($1.title ?? "") })
-                )
+                let body = try res.content.decode(APIResponse<[TongDTO]>.self)
+                #expect(body.data.isEmpty)
             })
         }
     }
-    
-    @Test("Creating a Todo")
-    func createTodo() async throws {
-        let newDTO = TodoDTO(id: nil, title: "test")
-        
+
+    @Test("Submit a tong")
+    func submitTong() async throws {
         try await withApp { app in
-            try await app.testing().test(.POST, "todos", beforeRequest: { req in
-                try req.content.encode(newDTO)
+            let submission = TongSubmission(
+                type: "quiz",
+                title: "Test Tong",
+                subtitle: nil,
+                thumbURL: nil,
+                bundleURL: "https://example.com",
+                version: "1.0.0",
+                category: "personality",
+                ageRating: "all",
+                submitterContact: "test@example.com"
+            )
+            try await app.testing().test(.POST, "submissions", beforeRequest: { req in
+                try req.content.encode(submission)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let models = try await Todo.query(on: app.db).all()
-                #expect(models.map({ $0.toDTO().title }) == [newDTO.title])
+                let body = try res.content.decode(APIResponse<TongDTO>.self)
+                #expect(body.data.title == "Test Tong")
+                #expect(body.data.status == .submitted)
             })
         }
-    }
-    
-    @Test("Deleting a Todo")
-    func deleteTodo() async throws {
-        let testTodos = [Todo(title: "test1"), Todo(title: "test2")]
-        
-        try await withApp { app in
-            try await testTodos.create(on: app.db)
-            
-            try await app.testing().test(.DELETE, "todos/\(testTodos[0].requireID())", afterResponse: { res async throws in
-                #expect(res.status == .noContent)
-                let model = try await Todo.find(testTodos[0].id, on: app.db)
-                #expect(model == nil)
-            })
-        }
-    }
-}
-
-extension TodoDTO: Equatable {
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id && lhs.title == rhs.title
     }
 }
