@@ -17,6 +17,12 @@ let package = Package(
         .package(url: "https://github.com/vapor/leaf.git", from: "4.3.0"),
         // 🔵 Non-blocking, event-driven networking for Swift. Used for custom executors
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
+        // 📦 ZIP 아카이브 읽기/쓰기 (번들 업로드용).
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
+        // 🔐 JWT 인증 (Apple Sign In 토큰 검증 + 자체 토큰 발급).
+        .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
+        // 📖 Swagger/OpenAPI 문서 자동 생성.
+        .package(url: "https://github.com/dankinsoid/VaporToOpenAPI.git", from: "4.8.1"),
     ],
     targets: [
         .executableTarget(
@@ -28,6 +34,9 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+                .product(name: "JWT", package: "jwt"),
+                .product(name: "VaporToOpenAPI", package: "VaporToOpenAPI"),
             ],
             swiftSettings: swiftSettings
         ),

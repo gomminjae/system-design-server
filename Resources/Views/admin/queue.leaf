@@ -27,6 +27,9 @@
     <div class="card">
       <h3>#(tong.title)</h3>
       <p class="meta">#(tong.type) · #(tong.category) · v#(tong.version) · #(tong.ageRating)</p>
+      #if(tong.bundleURL != ""):
+        <a href="#(tong.bundleURL)" target="_blank" style="color:#3498db;font-size:13px;">미리보기 ↗</a>
+      #endif
       <form method="post" action="/admin/tongs/#(tong.id)/approve">
         <button class="approve" type="submit">승인</button>
       </form>

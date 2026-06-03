@@ -9,6 +9,7 @@ DerivedData/
 .env
 .env.*
 db.sqlite
+Storage/
 
 # Tooling
 .omc/
