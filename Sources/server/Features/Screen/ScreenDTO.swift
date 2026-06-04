@@ -42,10 +42,15 @@ struct SectionData: Content {
     var layout: String?             // "horizontal_scroll" | "grid"
     var showMoreText: String?
     var items: [TongItem]?
+    /// 동적 바인딩: 지정 시 서버가 이 카테고리의 승인 통으로 items를 실시간 채운다.
+    var categorySlug: String?
+    /// 동적 바인딩 최대 개수 (기본 10).
+    var limit: Int?
 
     // category_chips
+    // chips는 서버가 항상 Category 테이블로 채운다(어드민 수동 입력 없음).
     var chips: [CategoryChip]?
-    var selectedId: String?
+    var selectedId: String?         // 기본 선택 칩 (없으면 "all")
 
     // tong_detail
     var tongId: String?

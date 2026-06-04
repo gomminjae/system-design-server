@@ -28,10 +28,13 @@ struct ScreenController: RouteCollection {
             throw Abort(.internalServerError, reason: "화면 데이터 파싱 실패")
         }
 
+        // 동적 바인딩: 저장된 참조를 실제 카탈로그/카테고리 데이터로 채운다.
+        let resolved = try await req.screenResolver.resolve(sections)
+
         let response = ScreenResponse(
             screenId: screen.screenId,
             title: screen.title,
-            sections: sections
+            sections: resolved
         )
         try await req.cache.set(response, id: screenId, expiresIn: .seconds(60))
         return response

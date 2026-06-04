@@ -254,8 +254,8 @@
       const d = s.data || {};
       switch (s.type) {
         case 'carousel': return (d.slides||[]).length + '장 · ' + (d.duration||3000) + 'ms';
-        case 'tong_list': return (d.headerTitle||'(제목 없음)') + ' · ' + (d.layout||'grid');
-        case 'category_chips': return (d.chips||[]).map(c=>c.label).join(', ') || '(없음)';
+        case 'tong_list': return (d.headerTitle||'(제목 없음)') + ' · ' + (d.categorySlug ? ('동적:'+d.categorySlug) : (d.layout||'grid'));
+        case 'category_chips': return 'DB 자동 (카테고리 전체)';
         case 'tong_detail': return d.title || '(제목 없음)';
         case 'section_header': return d.headerTitle || '(제목 없음)';
         case 'divider': return (d.height||8) + 'px';
@@ -358,10 +358,10 @@
             ${field('duration','자동 슬라이드 (ms)', d.duration||3000)}`;
           break;
         case 'tong_list':
-          h = `${field('headerTitle','헤더 제목',d.headerTitle)}${field('headerSubtitle','헤더 부제목',d.headerSubtitle)}${sel('layout','레이아웃',d.layout,['horizontal_scroll','grid'])}${field('showMoreText','더보기 텍스트',d.showMoreText)}${field('actionRoute','더보기 경로',a.route)}`;
+          h = `${field('headerTitle','헤더 제목',d.headerTitle)}${field('headerSubtitle','헤더 부제목',d.headerSubtitle)}${sel('layout','레이아웃',d.layout,['horizontal_scroll','grid'])}${field('categorySlug','동적: 카테고리 slug (비우면 수동 items)',d.categorySlug)}${field('limit','동적: 최대 개수 (기본 10)',d.limit)}${field('showMoreText','더보기 텍스트',d.showMoreText)}${field('actionRoute','더보기 경로',a.route)}`;
           break;
         case 'category_chips':
-          h = `${field('chips','칩 (id:라벨, 쉼표 구분)', (d.chips||[]).map(c=>c.id+':'+c.label).join(', '))}${field('selectedId','기본 선택 ID',d.selectedId)}`;
+          h = `<p style="font-size:13px;color:var(--text-sub);background:var(--blue-bg);padding:10px 12px;border-radius:10px;margin:0 0 14px;">🔗 칩 목록은 서버가 카테고리 DB에서 자동으로 채웁니다. 수동 입력이 필요 없어요.</p>${field('selectedId','기본 선택 (비우면 전체)',d.selectedId)}`;
           break;
         case 'tong_detail':
           h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbURL','썸네일 URL',d.thumbURL)}${field('stats','통계',d.stats)}${field('buttonText','버튼 텍스트',d.buttonText)}${field('shareText','공유 텍스트',d.shareText)}${field('bundleURL','번들 URL',d.bundleURL)}`;
@@ -424,12 +424,12 @@
           s.data = { slides, duration: parseInt(val('duration'))||3000 };
           break;
         case 'tong_list':
-          s.data = { headerTitle: val('headerTitle'), headerSubtitle: val('headerSubtitle'), layout: val('layout'), showMoreText: val('showMoreText'), items: d.items||[] };
+          s.data = { headerTitle: val('headerTitle'), headerSubtitle: val('headerSubtitle'), layout: val('layout'), showMoreText: val('showMoreText'), categorySlug: val('categorySlug'), limit: parseInt(val('limit')) || null, items: d.items||[] };
           s.action = val('actionRoute') ? { type: 'navigate', route: val('actionRoute') } : null;
           break;
         case 'category_chips':
-          const chips = val('chips').split(',').map(t=>t.trim()).filter(Boolean).map(t => { const [id,label] = t.split(':'); return { id: id.trim(), label: (label||id).trim() }; });
-          s.data = { chips, selectedId: val('selectedId') };
+          // 칩은 서버가 카테고리 DB로 채운다. 기본 선택만 저장.
+          s.data = { selectedId: val('selectedId') };
           break;
         case 'tong_detail':
           s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbURL: val('thumbURL'), stats: val('stats'), buttonText: val('buttonText'), shareText: val('shareText'), bundleURL: val('bundleURL') };
