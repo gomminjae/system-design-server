@@ -5,6 +5,13 @@ import VaporToOpenAPI
 struct SubmissionController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let protected = routes.grouped(JWTAuthMiddleware())
+        protected.get("submissions", use: self.mySubmissions)
+            .openAPI(
+                summary: "내 제출 목록",
+                description: "로그인한 유저가 제출한 통 목록(심사 상태·반려 사유 포함)을 최신순으로 반환한다.",
+                response: .type(APIResponse<[TongDTO]>.self),
+                auth: .bearer()
+            )
         protected.post("submissions", use: self.submit)
             .openAPI(
                 summary: "통 제출",
@@ -23,6 +30,14 @@ struct SubmissionController: RouteCollection {
                 response: .type(APIResponse<TongDTO>.self),
                 auth: .bearer()
             )
+    }
+
+    /// GET /submissions — 내가 제출한 통 목록.
+    @Sendable
+    func mySubmissions(req: Request) async throws -> APIResponse<[TongDTO]> {
+        let ownerID = try req.authenticatedUserID
+        let tongs = try await req.tongService.mySubmissions(ownerID: ownerID)
+        return APIResponse(tongs)
     }
 
     /// POST /submissions — 통 메타데이터 제출.
@@ -45,7 +60,7 @@ struct SubmissionController: RouteCollection {
             throw APIError.validation("잘못된 통 ID입니다.")
         }
         let tong = try await req.tongService.find(tongId)
-        guard tong.ownerID == userID else {
+        guard tong.$owner.id == userID else {
             throw APIError.forbidden("본인이 제출한 통만 번들을 업로드할 수 있습니다.")
         }
         guard tong.status == .submitted || tong.status == .rejected else {

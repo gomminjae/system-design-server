@@ -14,9 +14,14 @@ struct TongService {
 
     func submit(_ submission: TongSubmission, ownerID: UUID) async throws -> Tong {
         let tong = submission.toModel()
-        tong.ownerID = ownerID
+        tong.$owner.id = ownerID
         try await repository.save(tong)
         return tong
+    }
+
+    /// 특정 유저가 제출한 통 목록 (최신순). "내 제출 목록"용.
+    func mySubmissions(ownerID: UUID) async throws -> [TongDTO] {
+        try await repository.ownedBy(ownerID).map { $0.toDTO() }
     }
 
     func find(_ id: UUID) async throws -> Tong {

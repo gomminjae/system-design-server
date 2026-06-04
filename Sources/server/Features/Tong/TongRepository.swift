@@ -8,6 +8,8 @@ protocol TongRepository: Sendable {
     func getApproved(category: String?, after: UUID?, limit: Int) async throws -> [Tong]
     func pendingReview() async throws -> [Tong]
     func approvedByIDs(_ ids: [UUID]) async throws -> [UUID: Tong]
+    /// 특정 소유자가 제출한 통 전체 (최신순). 상태 무관 — "내 제출 목록"용.
+    func ownedBy(_ ownerID: UUID) async throws -> [Tong]
 }
 
 /// Fluent 기반 TongRepository 구현체.
@@ -68,5 +70,12 @@ struct FluentTongRepository: TongRepository {
             .filter(\.$id ~~ ids)
             .all()
         return Dictionary(tongs.compactMap { tong in tong.id.map { ($0, tong) } }) { first, _ in first }
+    }
+
+    func ownedBy(_ ownerID: UUID) async throws -> [Tong] {
+        try await Tong.query(on: db)
+            .filter(\.$owner.$id == ownerID)   // FK 컬럼(owner_id) 기준 필터
+            .sort(\.$createdAt, .descending)
+            .all()
     }
 }
