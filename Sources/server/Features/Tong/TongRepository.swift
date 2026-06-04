@@ -5,11 +5,8 @@ import Vapor
 protocol TongRepository: Sendable {
     func find(_ id: UUID) async throws -> Tong?
     func save(_ tong: Tong) async throws
-    func approved() async throws -> [Tong]
+    func getApproved(category: String?, after: UUID?, limit: Int) async throws -> [Tong]
     func pendingReview() async throws -> [Tong]
-    /// 특정 카테고리의 승인 통 (최신순, 최대 limit개). SDUI 동적 바인딩용.
-    func approved(category: String, limit: Int) async throws -> [Tong]
-    /// id 목록에 해당하는 승인 통을 id로 색인해 반환. SDUI hydrate용 배치 조회.
     func approvedByIDs(_ ids: [UUID]) async throws -> [UUID: Tong]
 }
 
@@ -25,13 +22,6 @@ struct FluentTongRepository: TongRepository {
         try await tong.save(on: db)
     }
 
-    func approved() async throws -> [Tong] {
-        try await Tong.query(on: db)
-            .filter(\.$status == .approved)
-            .sort(\.$createdAt, .descending)
-            .all()
-    }
-
     func pendingReview() async throws -> [Tong] {
         try await Tong.query(on: db)
             .group(.or) { or in
@@ -42,12 +32,32 @@ struct FluentTongRepository: TongRepository {
             .all()
     }
 
-    func approved(category: String, limit: Int) async throws -> [Tong] {
-        try await Tong.query(on: db)
+    func getApproved(category: String?, after cursor: UUID?, limit: Int) async throws -> [Tong] {
+        var query = Tong.query(on: db)
             .filter(\.$status == .approved)
-            .filter(\.$category == category)
+
+        if let category {
+            query = query.filter(\.$category == category)
+        }
+
+        if let cursor {
+            guard let cursorTong = try await Tong.find(cursor, on: db),
+                  let cursorDate = cursorTong.createdAt else {
+                throw APIError.validation("유효하지 않은 커서입니다.")
+            }
+            query = query.group(.or) { or in
+                or.filter(\.$createdAt < cursorDate)
+                or.group(.and) { and in
+                    and.filter(\.$createdAt == cursorDate)
+                    and.filter(\.$id < cursor)
+                }
+            }
+        }
+
+        return try await query
             .sort(\.$createdAt, .descending)
-            .limit(limit)
+            .sort(\.$id, .descending)
+            .limit(limit + 1)
             .all()
     }
 

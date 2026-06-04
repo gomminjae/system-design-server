@@ -38,7 +38,7 @@ struct ScreenResolver {
     private func resolveTongList(_ section: Section) async throws -> Section {
         guard let slug = section.data.categorySlug, !slug.isEmpty else { return section }
         let limit = section.data.limit ?? 10
-        let items = try await tongs.approved(category: slug, limit: limit).map { $0.toItem() }
+        let items = try await tongs.getApproved(category: slug, after: nil, limit: limit).map { $0.toItem() }
         var data = section.data
         data.items = items
         return Section(id: section.id, type: section.type, data: data, action: section.action)

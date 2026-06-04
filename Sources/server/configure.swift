@@ -62,7 +62,7 @@ private func configureDatabase(_ app: Application) throws {
 
     let config = SQLPostgresConfiguration(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init) ?? SQLPostgresConfiguration.ianaPortNumber,
+        port: Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5433,
         username: Environment.get("DATABASE_USERNAME") ?? Environment.get("USER") ?? "postgres",
         password: Environment.get("DATABASE_PASSWORD"),
         database: Environment.get("DATABASE_NAME") ?? "tongstongs",

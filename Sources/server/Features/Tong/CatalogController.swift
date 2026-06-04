@@ -8,17 +8,16 @@ struct CatalogController: RouteCollection {
             .openAPI(
                 summary: "카탈로그 조회",
                 description: "승인된 통(미니앱) 목록을 반환한다.",
-                response: .type(APIResponse<[TongDTO]>.self)
+                response: .type(APIResponse<CursorList<TongDTO>>.self)
             )
     }
 
     @Sendable
-    func catalog(req: Request) async throws -> APIResponse<[TongDTO]> {
-        if let cached = try await req.cache.get([TongDTO].self) {
-            return APIResponse(cached)
-        }
-        let tongs = try await req.tongService.catalog()
-        try await req.cache.set(tongs, expiresIn: .seconds(60))
-        return APIResponse(tongs)
+    func catalog(req: Request) async throws -> APIResponse<CursorList<TongDTO>> {
+        let category = req.query[String.self, at: "category"]
+        let after = req.query[String.self, at: "after"].flatMap { UUID(uuidString: $0) }
+        let limit = req.query[Int.self, at: "limit"] ?? 20
+        let result = try await req.tongService.catalog(category: category, after: after, limit: limit)
+        return APIResponse(result)
     }
 }

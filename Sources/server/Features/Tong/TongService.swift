@@ -4,8 +4,12 @@ import Vapor
 struct TongService {
     let repository: any TongRepository
 
-    func catalog() async throws -> [TongDTO] {
-        try await repository.approved().map { $0.toDTO() }
+    func catalog(category: String?, after: UUID?, limit: Int) async throws -> CursorList<TongDTO> {
+        let tongs = try await repository.getApproved(category: category, after: after, limit: limit)
+        let hasMore = tongs.count > limit
+        let items = hasMore ? Array(tongs.prefix(limit)) : tongs
+        let nextCursor = hasMore ? items.last?.id?.uuidString : nil
+        return CursorList(items: items.map { $0.toDTO() }, nextCursor: nextCursor, hasMore: hasMore)
     }
 
     func submit(_ submission: TongSubmission, ownerID: UUID) async throws -> Tong {

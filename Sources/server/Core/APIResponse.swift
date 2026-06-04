@@ -9,3 +9,9 @@ struct APIResponse<T: Content>: Content {
         self.data = data
     }
 }
+
+struct CursorList<T: Content>: Content {
+    let items: [T]
+    let nextCursor: String?
+    let hasMore: Bool
+}

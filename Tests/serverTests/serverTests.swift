@@ -49,8 +49,9 @@ struct serverTests {
         try await withApp { app in
             try await app.testing().test(.GET, "catalog", afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let body = try res.content.decode(APIResponse<[TongDTO]>.self)
-                #expect(body.data.isEmpty)
+                let body = try res.content.decode(APIResponse<CursorList<TongDTO>>.self)
+                #expect(body.data.items.isEmpty)
+                #expect(body.data.hasMore == false)
             })
         }
     }
