@@ -52,6 +52,11 @@ final class Tong: Model, @unchecked Sendable {
     @OptionalField(key: "submitter_contact")
     var submitterContact: String?
 
+    /// 제출한 유저(소유자) ID. 번들 업로드 등 소유자 검증에 쓴다.
+    /// 계정 인증 이전에 생성된 통은 nil.
+    @OptionalField(key: "owner_id")
+    var ownerID: UUID?
+
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
@@ -71,7 +76,8 @@ final class Tong: Model, @unchecked Sendable {
         category: String,
         ageRating: String,
         status: TongStatus = .submitted,
-        submitterContact: String? = nil
+        submitterContact: String? = nil,
+        ownerID: UUID? = nil
     ) {
         self.id = id
         self.type = type
@@ -84,6 +90,7 @@ final class Tong: Model, @unchecked Sendable {
         self.ageRating = ageRating
         self.status = status
         self.submitterContact = submitterContact
+        self.ownerID = ownerID
     }
 
     func toDTO() -> TongDTO {

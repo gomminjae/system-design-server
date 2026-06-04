@@ -8,8 +8,9 @@ struct TongService {
         try await repository.approved().map { $0.toDTO() }
     }
 
-    func submit(_ submission: TongSubmission) async throws -> Tong {
+    func submit(_ submission: TongSubmission, ownerID: UUID) async throws -> Tong {
         let tong = submission.toModel()
+        tong.ownerID = ownerID
         try await repository.save(tong)
         return tong
     }

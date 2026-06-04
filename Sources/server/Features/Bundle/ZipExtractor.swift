@@ -10,13 +10,17 @@ enum ZipExtractor {
 
         var files: [BundleFile] = []
         for entry in archive where entry.type == .file {
+            let path = entry.path
+            if path.hasPrefix("__MACOSX") || path.hasSuffix(".DS_Store") { continue }
+
+            // zip-slip 방어: 디렉토리 탈출 경로면 압축 해제 전에 거부한다.
+            let safePath = try BundlePath.sanitize(path)
+
             var entryData = Data()
             _ = try archive.extract(entry) { chunk in
                 entryData.append(chunk)
             }
-            let path = entry.path
-            if path.hasPrefix("__MACOSX") || path.hasSuffix(".DS_Store") { continue }
-            files.append(BundleFile(path: path, data: entryData))
+            files.append(BundleFile(path: safePath, data: entryData))
         }
         return files
     }

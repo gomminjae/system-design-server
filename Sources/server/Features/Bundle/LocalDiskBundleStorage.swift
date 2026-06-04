@@ -12,7 +12,8 @@ struct LocalDiskBundleStorage: BundleStorage {
             atPath: dir, withIntermediateDirectories: true
         )
         for file in files {
-            let filePath = dir + "/" + file.path
+            let safePath = try BundlePath.sanitize(file.path)
+            let filePath = dir + "/" + safePath
             let parentDir = (filePath as NSString).deletingLastPathComponent
             try FileManager.default.createDirectory(
                 atPath: parentDir, withIntermediateDirectories: true
@@ -22,7 +23,8 @@ struct LocalDiskBundleStorage: BundleStorage {
     }
 
     func read(_ location: BundleLocation, path: String) async throws -> Data? {
-        let filePath = directory(for: location) + "/" + path
+        let safePath = try BundlePath.sanitize(path)
+        let filePath = directory(for: location) + "/" + safePath
         return FileManager.default.contents(atPath: filePath)
     }
 

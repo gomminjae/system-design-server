@@ -18,4 +18,8 @@ struct APIError: Error, AbortError {
     static func unauthorized(_ message: String = "인증이 필요합니다.") -> APIError {
         .init(status: .unauthorized, code: "unauthorized", reason: message)
     }
+
+    static func forbidden(_ message: String = "권한이 없습니다.") -> APIError {
+        .init(status: .forbidden, code: "forbidden", reason: message)
+    }
 }
