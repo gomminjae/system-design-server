@@ -55,7 +55,7 @@
 
     async function loadScreens() {
       const res = await fetch('/admin/api/screens', { headers });
-      const screens = await res.json();
+      const screens = (await res.json()).data;
       const list = document.getElementById('screen-list');
       if (screens.length === 0) {
         list.innerHTML = '<div class="empty"><span class="emoji">📱</span>등록된 화면이 없어요.</div>';

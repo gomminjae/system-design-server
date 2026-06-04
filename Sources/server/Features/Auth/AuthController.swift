@@ -10,7 +10,7 @@ struct AuthController: RouteCollection {
                 summary: "소셜 로그인",
                 description: "Apple/Kakao OIDC id_token으로 로그인하고 자체 JWT를 발급받는다.",
                 body: .type(SocialLoginRequest.self),
-                response: .type(AuthResponse.self)
+                response: .type(APIResponse<AuthResponse>.self)
             )
         auth.get("me", use: self.me)
             .openAPI(
@@ -23,9 +23,10 @@ struct AuthController: RouteCollection {
     /// POST /auth/login — 소셜 로그인 통합 엔드포인트.
     /// body: { "provider": "apple" | "kakao", "idToken": "..." }
     @Sendable
-    func login(req: Request) async throws -> AuthResponse {
+    func login(req: Request) async throws -> APIResponse<AuthResponse> {
         let body = try req.content.decode(SocialLoginRequest.self)
-        return try await req.authService.login(provider: body.provider, idToken: body.idToken, nickname: body.nickname)
+        let result = try await req.authService.login(provider: body.provider, idToken: body.idToken, nickname: body.nickname)
+        return APIResponse(result)
     }
 
     /// GET /auth/me — 현재 로그인된 유저 정보.

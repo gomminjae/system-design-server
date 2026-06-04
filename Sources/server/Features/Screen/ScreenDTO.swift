@@ -1,10 +1,17 @@
 import Vapor
 
+/// SDUI 페이로드 스키마 버전. 섹션 구조가 바뀌면 올린다(클라 forward-compat 판단용).
+enum SDUISchema {
+    static let version = 1
+}
+
 /// SDUI 화면 응답.
 struct ScreenResponse: Content {
     let screenId: String
     let title: String
     let sections: [Section]
+    /// 페이로드 스키마 버전. 클라가 이 버전을 보고 호환 여부를 판단한다.
+    var schemaVersion: Int = SDUISchema.version
 }
 
 /// SDUI 섹션 — 화면을 구성하는 독립적 목적 단위.

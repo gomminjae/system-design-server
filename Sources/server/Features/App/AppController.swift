@@ -8,10 +8,10 @@ struct AppController: RouteCollection {
     }
 
     @Sendable
-    func version(req: Request) async throws -> AppVersionResponse {
+    func version(req: Request) async throws -> APIResponse<AppVersionResponse> {
         let platform = req.query[String.self, at: "platform"] ?? "ios"
         if let cached = try await req.cache.get(AppVersionResponse.self, id: platform) {
-            return cached
+            return APIResponse(cached)
         }
 
         guard let version = try await AppVersion.query(on: req.db)
@@ -25,7 +25,7 @@ struct AppController: RouteCollection {
             releaseNotes: version.releaseNotes
         )
         try await req.cache.set(response, id: platform, expiresIn: .seconds(300))
-        return response
+        return APIResponse(response)
     }
 }
 
@@ -37,7 +37,7 @@ struct AppAdminController: RouteCollection {
 
     /// POST /admin/app/version — 버전 정보 생성/수정.
     @Sendable
-    func upsertVersion(req: Request) async throws -> AppVersionResponse {
+    func upsertVersion(req: Request) async throws -> APIResponse<AppVersionResponse> {
         let body = try req.content.decode(AppVersionUpdateRequest.self)
         let version: AppVersion
         if let existing = try await AppVersion.query(on: req.db)
@@ -57,10 +57,10 @@ struct AppAdminController: RouteCollection {
         }
         try await version.save(on: req.db)
         try await req.cache.delete(AppVersionResponse.self, id: body.platform)
-        return AppVersionResponse(
+        return APIResponse(AppVersionResponse(
             minVersion: version.minVersion,
             latestVersion: version.latestVersion,
             releaseNotes: version.releaseNotes
-        )
+        ))
     }
 }

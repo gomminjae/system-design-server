@@ -111,6 +111,41 @@ struct serverTests {
         }
     }
 
+    @Test("My submissions returns only the owner's tongs")
+    func mySubmissions() async throws {
+        try await withApp { app in
+            let (_, tokenA) = try await makeAuthenticatedUser(app)
+            let (_, tokenB) = try await makeAuthenticatedUser(app)
+
+            // A가 통 1개 제출
+            try await app.testing().test(.POST, "submissions", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: tokenA)
+                try req.content.encode(Self.sampleSubmission)
+            }, afterResponse: { res async in
+                #expect(res.status == .ok)
+            })
+
+            // A의 목록엔 1개
+            try await app.testing().test(.GET, "submissions", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: tokenA)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let body = try res.content.decode(APIResponse<[TongDTO]>.self)
+                #expect(body.data.count == 1)
+                #expect(body.data.first?.title == "Test Tong")
+            })
+
+            // B의 목록엔 0개 (소유자 격리)
+            try await app.testing().test(.GET, "submissions", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: tokenB)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let body = try res.content.decode(APIResponse<[TongDTO]>.self)
+                #expect(body.data.isEmpty)
+            })
+        }
+    }
+
     @Test("Screen resolves dynamic tong_list and category chips")
     func screenDynamicBinding() async throws {
         try await withApp { app in
@@ -134,7 +169,10 @@ struct serverTests {
 
             try await app.testing().test(.GET, "screens/home", afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let body = try res.content.decode(ScreenResponse.self)
+                let body = try res.content.decode(APIResponse<ScreenResponse>.self).data
+
+                // 스키마 버전 노출
+                #expect(body.schemaVersion == SDUISchema.version)
 
                 // tong_list가 카탈로그에서 실시간으로 채워졌는지
                 let list = body.sections.first { $0.type == .tongList }

@@ -9,10 +9,10 @@ struct ScreenController: RouteCollection {
 
     /// GET /screens/:screenId — 발행된 화면 구성 반환.
     @Sendable
-    func getScreen(req: Request) async throws -> ScreenResponse {
+    func getScreen(req: Request) async throws -> APIResponse<ScreenResponse> {
         let screenId = try req.parameters.require("screenId", as: String.self)
         if let cached = try await req.cache.get(ScreenResponse.self, id: screenId) {
-            return cached
+            return APIResponse(cached)
         }
 
         guard let screen = try await Screen.query(on: req.db)
@@ -25,7 +25,9 @@ struct ScreenController: RouteCollection {
         let decoder = JSONDecoder()
         guard let data = screen.sectionsJSON.data(using: .utf8),
               let sections = try? decoder.decode([Section].self, from: data) else {
-            throw Abort(.internalServerError, reason: "화면 데이터 파싱 실패")
+            req.logger.error("화면 섹션 JSON 파싱 실패: \(screenId)")
+            throw APIError(status: .internalServerError, code: "screen_corrupt",
+                           reason: "화면 데이터를 불러올 수 없습니다.")
         }
 
         // 동적 바인딩: 저장된 참조를 실제 카탈로그/카테고리 데이터로 채운다.
@@ -37,7 +39,7 @@ struct ScreenController: RouteCollection {
             sections: resolved
         )
         try await req.cache.set(response, id: screenId, expiresIn: .seconds(60))
-        return response
+        return APIResponse(response)
     }
 }
 
@@ -54,21 +56,21 @@ struct ScreenAdminController: RouteCollection {
 
     /// GET /admin/screens — 전체 화면 목록.
     @Sendable
-    func list(req: Request) async throws -> [ScreenListItem] {
+    func list(req: Request) async throws -> APIResponse<[ScreenListItem]> {
         let screens = try await Screen.query(on: req.db).all()
-        return screens.map {
+        return APIResponse(screens.map {
             ScreenListItem(
                 screenId: $0.screenId,
                 title: $0.title,
                 isPublished: $0.isPublished,
                 updatedAt: $0.updatedAt
             )
-        }
+        })
     }
 
     /// GET /admin/screens/:screenId — 화면 상세 (섹션 JSON 포함).
     @Sendable
-    func get(req: Request) async throws -> ScreenDetailResponse {
+    func get(req: Request) async throws -> APIResponse<ScreenDetailResponse> {
         let screenId = try req.parameters.require("screenId", as: String.self)
         guard let screen = try await Screen.query(on: req.db)
             .filter(\.$screenId == screenId)
@@ -85,18 +87,18 @@ struct ScreenAdminController: RouteCollection {
             sections = []
         }
 
-        return ScreenDetailResponse(
+        return APIResponse(ScreenDetailResponse(
             screenId: screen.screenId,
             title: screen.title,
             sections: sections,
             isPublished: screen.isPublished,
             updatedAt: screen.updatedAt
-        )
+        ))
     }
 
     /// POST /admin/screens — 화면 생성/수정 (upsert).
     @Sendable
-    func upsert(req: Request) async throws -> ScreenDetailResponse {
+    func upsert(req: Request) async throws -> APIResponse<ScreenDetailResponse> {
         let body = try req.content.decode(ScreenUpsertRequest.self)
         let encoder = JSONEncoder()
         let sectionsData = try encoder.encode(body.sections)
@@ -119,18 +121,18 @@ struct ScreenAdminController: RouteCollection {
         try await screen.save(on: req.db)
         try await req.cache.delete(ScreenResponse.self, id: body.screenId)
 
-        return ScreenDetailResponse(
+        return APIResponse(ScreenDetailResponse(
             screenId: screen.screenId,
             title: screen.title,
             sections: body.sections,
             isPublished: screen.isPublished,
             updatedAt: screen.updatedAt
-        )
+        ))
     }
 
     /// PUT /admin/screens/:screenId/publish — 발행/비발행 토글.
     @Sendable
-    func publish(req: Request) async throws -> ScreenListItem {
+    func publish(req: Request) async throws -> APIResponse<ScreenListItem> {
         let screenId = try req.parameters.require("screenId", as: String.self)
         guard let screen = try await Screen.query(on: req.db)
             .filter(\.$screenId == screenId)
@@ -140,12 +142,12 @@ struct ScreenAdminController: RouteCollection {
         screen.isPublished.toggle()
         try await screen.save(on: req.db)
         try await req.cache.delete(ScreenResponse.self, id: screen.screenId)
-        return ScreenListItem(
+        return APIResponse(ScreenListItem(
             screenId: screen.screenId,
             title: screen.title,
             isPublished: screen.isPublished,
             updatedAt: screen.updatedAt
-        )
+        ))
     }
 
     /// DELETE /admin/screens/:screenId — 화면 삭제.

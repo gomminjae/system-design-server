@@ -218,7 +218,7 @@
 
     async function load() {
       const res = await fetch('/admin/api/screens/' + screenId, { headers });
-      screenData = await res.json();
+      screenData = (await res.json()).data;
       sections = screenData.sections || [];
       document.getElementById('page-title').textContent = screenData.title + ' 편집';
       document.getElementById('screen-title-nav').textContent = screenData.title;
@@ -462,7 +462,7 @@
     }
     async function togglePublish() {
       const res = await fetch('/admin/api/screens/' + screenId + '/publish', { method: 'PUT', headers });
-      updatePublishBadge((await res.json()).isPublished);
+      updatePublishBadge((await res.json()).data.isPublished);
     }
 
     load();
