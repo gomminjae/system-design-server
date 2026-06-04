@@ -18,7 +18,7 @@ struct AdminController: RouteCollection {
     @Sendable
     func pendingReviews(req: Request) async throws -> View {
         let tongs = try await req.reviewService.pendingReviews()
-        return try await req.view.render("admin/queue", ReviewQueueContext(tongs: tongs)).get()
+        return try await req.view.render("admin/reviews", ReviewListContext(tongs: tongs)).get()
     }
 
     @Sendable

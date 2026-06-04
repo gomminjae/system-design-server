@@ -10,7 +10,7 @@ struct ReviewService {
         try await repository.pendingReview().map { $0.toDTO() }
     }
 
-    /// 통을 심사 큐에 제출한다.
+    /// 통을 심사 목록에 제출한다.
     func submitForReview(_ tong: Tong) async throws {
         tong.status = .submitted
         try await repository.save(tong)

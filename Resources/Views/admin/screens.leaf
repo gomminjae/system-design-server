@@ -4,42 +4,50 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>통스통스 · 화면 관리</title>
+  #extend("admin/styles")
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; color: #222; }
-    h1 { font-size: 22px; }
-    a { color: #3498db; text-decoration: none; }
-    .card { border: 1px solid #e4e4e4; border-radius: 12px; padding: 16px; margin: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-    .card h3 { margin: 0 0 4px; }
-    .meta { color: #999; font-size: 13px; margin: 0; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-    .badge.published { background: #2ecc71; color: #fff; }
-    .badge.draft { background: #bdc3c7; color: #fff; }
-    button { padding: 7px 16px; border-radius: 8px; border: 0; cursor: pointer; font-size: 14px; }
-    .btn-primary { background: #3498db; color: #fff; }
-    .btn-small { padding: 5px 12px; font-size: 13px; }
-    .empty { color: #888; }
-    .nav { margin-bottom: 16px; font-size: 14px; }
-    .nav a { margin-right: 16px; }
+    .create-card { display: none; }
+    .create-card.show { display: block; }
+    .create-card .field { margin-bottom: 10px; }
+    .create-card label { display: block; font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+    .create-card input { width: 100%; }
+    .screen-id { font-size: 17px; font-weight: 700; }
+    .screen-id .pin { color: var(--text-cap); font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="nav">
-    <a href="/admin">심사 큐</a>
-    <a href="/admin/screens"><b>화면 관리</b></a>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="logo">🫙</span> 통스통스</div>
+      <a class="nav-item" href="/admin"><span class="ico">📥</span> 심사 목록</a>
+      <a class="nav-item active" href="/admin/screens"><span class="ico">📱</span> 화면 관리</a>
+    </aside>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>화면 관리</h1>
+          <p class="sub">앱 SDUI 화면을 만들고 발행해요</p>
+        </div>
+        <button class="btn btn-primary" onclick="showCreate()">+ 새 화면</button>
+      </div>
+
+      <div id="create-form" class="create-card card">
+        <div class="field">
+          <label>화면 ID</label>
+          <input id="new-screen-id" placeholder="예: home">
+        </div>
+        <div class="field">
+          <label>화면 제목</label>
+          <input id="new-title" placeholder="예: 홈">
+        </div>
+        <button class="btn btn-primary" onclick="createScreen()">생성</button>
+        <button class="btn btn-ghost" onclick="hideCreate()">취소</button>
+      </div>
+
+      <div id="screen-list"></div>
+    </main>
   </div>
-
-  <h1>📱 화면 관리</h1>
-  <button class="btn-primary" onclick="showCreate()">+ 새 화면</button>
-
-  <div id="create-form" style="display:none; margin: 16px 0;">
-    <div class="card" style="flex-direction:column; align-items:stretch;">
-      <input id="new-screen-id" placeholder="화면 ID (예: home)" style="padding:8px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px;">
-      <input id="new-title" placeholder="화면 제목" style="padding:8px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px;">
-      <button class="btn-primary" onclick="createScreen()">생성</button>
-    </div>
-  </div>
-
-  <div id="screen-list"></div>
 
   <script>
     const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
@@ -50,25 +58,22 @@
       const screens = await res.json();
       const list = document.getElementById('screen-list');
       if (screens.length === 0) {
-        list.innerHTML = '<p class="empty">등록된 화면이 없어요.</p>';
+        list.innerHTML = '<div class="empty"><span class="emoji">📱</span>등록된 화면이 없어요.</div>';
         return;
       }
       list.innerHTML = screens.map(s => `
-        <div class="card">
+        <div class="card row">
           <div>
-            <h3>${s.screenId}</h3>
-            <p class="meta">${s.title} · <span class="badge ${s.isPublished ? 'published' : 'draft'}">${s.isPublished ? '발행' : '미발행'}</span></p>
+            <p class="screen-id"><span class="pin">#</span>${s.screenId}</p>
+            <p class="meta" style="margin-top:6px;">${s.title} · <span class="badge ${s.isPublished ? 'published' : 'draft'}">${s.isPublished ? '발행중' : '미발행'}</span></p>
           </div>
-          <div>
-            <a href="/admin/screens/${s.screenId}/edit">편집</a>
-          </div>
+          <a class="btn btn-outline btn-sm" href="/admin/screens/${s.screenId}/edit">편집</a>
         </div>
       `).join('');
     }
 
-    function showCreate() {
-      document.getElementById('create-form').style.display = 'block';
-    }
+    function showCreate() { document.getElementById('create-form').classList.add('show'); }
+    function hideCreate() { document.getElementById('create-form').classList.remove('show'); }
 
     async function createScreen() {
       const screenId = document.getElementById('new-screen-id').value.trim();
