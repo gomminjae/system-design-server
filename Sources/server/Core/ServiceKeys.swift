@@ -20,6 +20,12 @@ extension Request {
 
     var tongService: TongService { TongService(repository: tongRepository) }
 
+    var categoryService: CategoryService { CategoryService(db: self.db) }
+
+    var screenResolver: ScreenResolver {
+        ScreenResolver(tongs: tongRepository, categories: categoryService)
+    }
+
     var bundleService: BundleService { BundleService(storage: bundleStorage) }
 
     var reviewService: ReviewService {

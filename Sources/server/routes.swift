@@ -30,6 +30,7 @@ func routes(_ app: Application) throws {
     // 공개 JSON API — 표준 응답/에러 봉투 적용
     let api = app.grouped(APIErrorMiddleware())
     try api.register(collection: CatalogController())
+    try api.register(collection: CategoryController())
     try api.register(collection: SubmissionController())
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
