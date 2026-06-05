@@ -11,7 +11,6 @@ struct SeedCategories: AsyncMigration {
         ("trivia", "상식·잡지식", "📚"),
         ("game", "미니게임", "🎮"),
         ("tool", "도구·유틸", "🛠"),
-        ("cardnews", "카드뉴스", "📰"),
     ]
 
     func prepare(on database: any Database) async throws {

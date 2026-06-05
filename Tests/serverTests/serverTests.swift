@@ -62,9 +62,9 @@ struct serverTests {
             try await app.testing().test(.GET, "categories", afterResponse: { res async throws in
                 #expect(res.status == .ok)
                 let body = try res.content.decode(APIResponse<[CategoryDTO]>.self)
-                #expect(body.data.count == 8)
+                #expect(body.data.count == 7)
                 #expect(body.data.first?.slug == "personality")
-                #expect(body.data.contains { $0.slug == "cardnews" })
+                #expect(body.data.contains { $0.slug == "cardnews" } == false)  // 카드뉴스는 독립 타입
             })
         }
     }
