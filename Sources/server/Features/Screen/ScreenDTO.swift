@@ -30,6 +30,10 @@ enum SectionType: String, Content {
     case categoryChips = "category_chips" // 카테고리 필터
     case tongDetail = "tong_detail"       // 통 상세
 
+    // 카드뉴스
+    case cardNewsList = "card_news_list"  // 카드뉴스 목록 (가로 스크롤/그리드)
+    case cardNewsCard = "card_news_card"  // 단일 카드뉴스 카드 (추천 등)
+
     // 공통 컴포넌트
     case sectionHeader = "section_header" // 제목 + 부제 + 더보기
     case divider                          // 구분선
@@ -53,6 +57,11 @@ struct SectionData: Content {
     var categorySlug: String?
     /// 동적 바인딩 최대 개수 (기본 10).
     var limit: Int?
+
+    // card_news_list (tong_list와 동일 패턴: categorySlug/limit 동적 바인딩)
+    var cardNewsItems: [CardNewsItem]?
+    // card_news_card
+    var cardNewsId: String?
 
     // category_chips
     // chips는 서버가 항상 Category 테이블로 채운다(어드민 수동 입력 없음).
@@ -97,6 +106,14 @@ struct TongItem: Content {
     let subtitle: String?
     let thumbnailURL: String?
     let badge: String?
+}
+
+struct CardNewsItem: Content {
+    let cardNewsId: String
+    let title: String
+    let subtitle: String?
+    let thumbnailURL: String?
+    let pageCount: Int
 }
 
 struct CategoryChip: Content {

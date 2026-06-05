@@ -273,11 +273,16 @@ struct serverTests {
             )
             try await tong.save(on: app.db)
 
-            // tong_list(동적 categorySlug) + category_chips 섹션을 가진 발행 화면
+            // 발행 카드뉴스 1개(love, 3페이지)
+            let cn = CardNews(title: "MBTI 카드뉴스", category: "love", status: .published, pageCount: 3)
+            try await cn.save(on: app.db)
+
+            // tong_list + category_chips + card_news_list 섹션을 가진 발행 화면
             let sectionsJSON = """
             [
               {"id":"s1","type":"tong_list","data":{"headerTitle":"성격","categorySlug":"personality","limit":5}},
-              {"id":"s2","type":"category_chips","data":{}}
+              {"id":"s2","type":"category_chips","data":{}},
+              {"id":"s3","type":"card_news_list","data":{"headerTitle":"오늘의 카드뉴스","categorySlug":"love","limit":5}}
             ]
             """
             let screen = Screen(screenId: "home", title: "홈", sectionsJSON: sectionsJSON, isPublished: true)
@@ -300,6 +305,12 @@ struct serverTests {
                 #expect(chips?.data.chips?.first?.id == "all")
                 #expect(chips?.data.chips?.contains { $0.id == "personality" } == true)
                 #expect(chips?.data.selectedId == "all")
+
+                // card_news_list가 발행 카드뉴스로 채워졌는지
+                let cnList = body.sections.first { $0.type == .cardNewsList }
+                #expect(cnList?.data.cardNewsItems?.count == 1)
+                #expect(cnList?.data.cardNewsItems?.first?.title == "MBTI 카드뉴스")
+                #expect(cnList?.data.cardNewsItems?.first?.pageCount == 3)
             })
         }
     }

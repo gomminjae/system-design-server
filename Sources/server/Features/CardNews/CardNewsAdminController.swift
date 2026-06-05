@@ -53,7 +53,9 @@ struct CardNewsAdminController: RouteCollection {
             }
             cardNews.title = body.title
             cardNews.subtitle = body.subtitle
-            cardNews.thumbnailURL = body.thumbnailURL
+            // 대표 이미지 자동: 입력 없으면 첫 페이지 이미지로 (역정규화 — 목록 N+1 방지)
+            let trimmedThumbnail = body.thumbnailURL?.trimmingCharacters(in: .whitespaces)
+            cardNews.thumbnailURL = (trimmedThumbnail?.isEmpty == false) ? trimmedThumbnail : body.pages.first?.imageURL
             cardNews.category = body.category
             cardNews.isSponsored = body.isSponsored
             cardNews.sponsorName = body.sponsorName

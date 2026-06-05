@@ -9,6 +9,7 @@ import Vapor
 struct ScreenResolver {
     let tongs: any TongRepository
     let categories: CategoryService
+    let cardNews: any CardNewsRepository
 
     func resolve(_ sections: [Section]) async throws -> [Section] {
         // card/detail이 참조하는 통 id를 모아 한 번에 조회(N+1 방지).
@@ -27,11 +28,42 @@ struct ScreenResolver {
                 resolved.append(resolveTongRef(section, tongsByID: tongsByID))
             case .categoryChips:
                 resolved.append(try await resolveChips(section))
+            case .cardNewsList:
+                resolved.append(try await resolveCardNewsList(section))
+            case .cardNewsCard:
+                resolved.append(try await resolveCardNewsCard(section))
             default:
                 resolved.append(section)
             }
         }
         return resolved
+    }
+
+    /// card_news_list: categorySlug 지정 시 발행 카드뉴스로 cardNewsItems 채움.
+    private func resolveCardNewsList(_ section: Section) async throws -> Section {
+        guard let slug = section.data.categorySlug, !slug.isEmpty else { return section }
+        let limit = section.data.limit ?? 10
+        let items = try await cardNews.published(category: slug, after: nil, limit: limit)
+            .prefix(limit)
+            .map { $0.toCardNewsItem() }
+        var data = section.data
+        data.cardNewsItems = Array(items)
+        return Section(id: section.id, type: section.type, data: data, action: section.action)
+    }
+
+    /// card_news_card: cardNewsId로 발행 카드뉴스에서 빈 필드만 채운다(어드민 오버라이드 우선).
+    private func resolveCardNewsCard(_ section: Section) async throws -> Section {
+        guard let idString = section.data.cardNewsId,
+              let id = UUID(uuidString: idString),
+              let cn = try await cardNews.findPublished(id) else { return section }
+
+        var data = section.data
+        if isBlank(data.title) { data.title = cn.title }
+        if isBlank(data.subtitle) { data.subtitle = cn.subtitle }
+        if isBlank(data.thumbnailURL) {
+            data.thumbnailURL = cn.thumbnailURL ?? cn.pages.sorted { $0.pageIndex < $1.pageIndex }.first?.imageURL
+        }
+        return Section(id: section.id, type: section.type, data: data, action: section.action)
     }
 
     /// tong_list: categorySlug 지정 시 승인 통으로 items 채움. 미지정이면 정적 items 유지.
@@ -91,6 +123,19 @@ extension Tong {
             subtitle: self.subtitle,
             thumbnailURL: self.thumbnailURL,
             badge: nil
+        )
+    }
+}
+
+extension CardNews {
+    /// SDUI card_news_list 항목으로 변환.
+    func toCardNewsItem() -> CardNewsItem {
+        CardNewsItem(
+            cardNewsId: self.id?.uuidString ?? "",
+            title: self.title,
+            subtitle: self.subtitle,
+            thumbnailURL: self.thumbnailURL,
+            pageCount: self.pageCount
         )
     }
 }

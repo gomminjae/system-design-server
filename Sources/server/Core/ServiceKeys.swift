@@ -27,7 +27,7 @@ extension Request {
     var cardNewsService: CardNewsService { CardNewsService(repository: cardNewsRepository) }
 
     var screenResolver: ScreenResolver {
-        ScreenResolver(tongs: tongRepository, categories: categoryService)
+        ScreenResolver(tongs: tongRepository, categories: categoryService, cardNews: cardNewsRepository)
     }
 
     var bundleService: BundleService { BundleService(storage: bundleStorage) }
