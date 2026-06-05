@@ -11,7 +11,7 @@
 | id | UUID | PK |
 | title | String | 카드뉴스 제목 |
 | subtitle | String? | 부제 |
-| thumb_url | String? | 대표 이미지 (목록용) |
+| thumbnail_url | String? | 대표 이미지 (목록용) |
 | category | String | 카테고리 slug (personality, love 등) |
 | status | String | draft / published |
 | created_at | Timestamp | |
@@ -58,7 +58,7 @@
     "id": "...",
     "title": "MBTI별 연애 스타일",
     "subtitle": "16가지 유형 분석",
-    "thumbURL": "https://...",
+    "thumbnailURL": "https://...",
     "category": "personality",
     "pageCount": 5,
     "pages": [
@@ -89,7 +89,7 @@
         "id": "...",
         "title": "MBTI별 연애 스타일",
         "subtitle": "16가지 유형 분석",
-        "thumbURL": "https://...",
+        "thumbnailURL": "https://...",
         "category": "personality",
         "pageCount": 5
       }
