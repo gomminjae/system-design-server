@@ -63,7 +63,7 @@ struct SectionData: Content {
     var tongId: String?
     var title: String?
     var subtitle: String?
-    var thumbURL: String?
+    var thumbnailURL: String?
     var stats: String?
     var buttonText: String?
     var shareText: String?
@@ -95,7 +95,7 @@ struct TongItem: Content {
     let tongId: String
     let title: String
     let subtitle: String?
-    let thumbURL: String?
+    let thumbnailURL: String?
     let badge: String?
 }
 

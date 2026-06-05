@@ -53,7 +53,7 @@ struct ScreenResolver {
         var data = section.data
         if isBlank(data.title) { data.title = tong.title }
         if isBlank(data.subtitle) { data.subtitle = tong.subtitle }
-        if isBlank(data.thumbURL) { data.thumbURL = tong.thumbURL }
+        if isBlank(data.thumbnailURL) { data.thumbnailURL = tong.thumbnailURL }
         if isBlank(data.bundleURL) { data.bundleURL = tong.bundleURL }
 
         var action = section.action
@@ -89,7 +89,7 @@ extension Tong {
             tongId: self.id?.uuidString ?? "",
             title: self.title,
             subtitle: self.subtitle,
-            thumbURL: self.thumbURL,
+            thumbnailURL: self.thumbnailURL,
             badge: nil
         )
     }

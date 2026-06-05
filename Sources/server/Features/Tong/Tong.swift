@@ -22,8 +22,8 @@ final class Tong: Model, @unchecked Sendable {
     @OptionalField(key: "subtitle")
     var subtitle: String?
 
-    @OptionalField(key: "thumb_url")
-    var thumbURL: String?
+    @OptionalField(key: "thumbnail_url")
+    var thumbnailURL: String?
 
     /// 번들 위치. CRUD 단계선 임시 문자열, 업로드 붙으면 id 기반 저장소 경로로 대체.
     @Field(key: "bundle_url")
@@ -71,7 +71,7 @@ final class Tong: Model, @unchecked Sendable {
         type: String,
         title: String,
         subtitle: String? = nil,
-        thumbURL: String? = nil,
+        thumbnailURL: String? = nil,
         bundleURL: String,
         version: String,
         category: String,
@@ -84,7 +84,7 @@ final class Tong: Model, @unchecked Sendable {
         self.type = type
         self.title = title
         self.subtitle = subtitle
-        self.thumbURL = thumbURL
+        self.thumbnailURL = thumbnailURL
         self.bundleURL = bundleURL
         self.version = version
         self.category = category
@@ -100,7 +100,7 @@ final class Tong: Model, @unchecked Sendable {
             type: self.type,
             title: self.title,
             subtitle: self.subtitle,
-            thumbURL: self.thumbURL,
+            thumbnailURL: self.thumbnailURL,
             bundleURL: self.bundleURL,
             version: self.version,
             category: self.category,

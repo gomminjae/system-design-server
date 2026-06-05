@@ -7,7 +7,7 @@ struct TongDTO: Content {
     var type: String
     var title: String
     var subtitle: String?
-    var thumbURL: String?
+    var thumbnailURL: String?
     var bundleURL: String
     var version: String
     var category: String

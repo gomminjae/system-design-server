@@ -307,7 +307,7 @@
       const items = d.items && d.items.length ? d.items : [{title:'샘플 1'},{title:'샘플 2'},{title:'샘플 3'}];
       const header = pvHeader(d);
       const cards = items.map(it => `<div class="pv-card">
-        <div class="thumb">${it.thumbURL?`<img src="${it.thumbURL}">`:''}</div>
+        <div class="thumb">${it.thumbnailURL?`<img src="${it.thumbnailURL}">`:''}</div>
         <h5>${it.title||''}</h5><p>${it.subtitle||''}</p>
         ${it.badge?`<span class="badge">${it.badge}</span>`:''}
       </div>`).join('');
@@ -323,7 +323,7 @@
 
     function pvDetail(d) {
       return `<div class="pv-detail">
-        <div class="thumb-lg">${d.thumbURL?`<img src="${d.thumbURL}">`:''}</div>
+        <div class="thumb-lg">${d.thumbnailURL?`<img src="${d.thumbnailURL}">`:''}</div>
         <h3>${d.title||'제목'}</h3><p class="sub">${d.subtitle||''}</p><p class="stats">${d.stats||''}</p>
         <div class="btn primary" style="display:block;width:100%;padding:15px;background:#3182f6;color:#fff;border-radius:14px;font-size:16px;font-weight:700;text-align:center;">${d.buttonText||'시작하기'}</div>
         ${d.shareText?`<span style="display:block;margin-top:12px;color:#3182f6;font-size:14px;">${d.shareText}</span>`:''}
@@ -332,7 +332,7 @@
 
     function pvTongCard(d) {
       return `<div class="pv-tong-card">
-        <div class="thumb-sm">${d.thumbURL?`<img src="${d.thumbURL}">`:''}</div>
+        <div class="thumb-sm">${d.thumbnailURL?`<img src="${d.thumbnailURL}">`:''}</div>
         <div><h5>${d.title||'제목'}</h5><p>${d.subtitle||''}</p>${d.badge?`<span class="badge">${d.badge}</span>`:''}</div>
       </div>`;
     }
@@ -364,7 +364,7 @@
           h = `<p style="font-size:13px;color:var(--text-sub);background:var(--blue-bg);padding:10px 12px;border-radius:10px;margin:0 0 14px;">🔗 칩 목록은 서버가 카테고리 DB에서 자동으로 채웁니다. 수동 입력이 필요 없어요.</p>${field('selectedId','기본 선택 (비우면 전체)',d.selectedId)}`;
           break;
         case 'tong_detail':
-          h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbURL','썸네일 URL',d.thumbURL)}${field('stats','통계',d.stats)}${field('buttonText','버튼 텍스트',d.buttonText)}${field('shareText','공유 텍스트',d.shareText)}${field('bundleURL','번들 URL',d.bundleURL)}`;
+          h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbnailURL','썸네일 URL',d.thumbnailURL)}${field('stats','통계',d.stats)}${field('buttonText','버튼 텍스트',d.buttonText)}${field('shareText','공유 텍스트',d.shareText)}${field('bundleURL','번들 URL',d.bundleURL)}`;
           break;
         case 'section_header':
           h = `${field('headerTitle','제목',d.headerTitle)}${field('headerSubtitle','부제목',d.headerSubtitle)}${field('showMoreText','더보기 텍스트',d.showMoreText)}${field('actionRoute','더보기 경로',a.route)}`;
@@ -376,7 +376,7 @@
           h = `${field('buttonLabel','라벨',d.buttonLabel)}${sel('buttonStyle','스타일',d.buttonStyle,['primary','secondary'])}${field('actionRoute','이동 경로',a.route)}`;
           break;
         case 'tong_card':
-          h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbURL','썸네일 URL',d.thumbURL)}${field('badge','뱃지',d.badge)}`;
+          h = `${field('tongId','통 ID',d.tongId)}${field('title','제목',d.title)}${field('subtitle','부제목',d.subtitle)}${field('thumbnailURL','썸네일 URL',d.thumbnailURL)}${field('badge','뱃지',d.badge)}`;
           break;
       }
       document.getElementById('modal-fields').innerHTML = h;
@@ -432,7 +432,7 @@
           s.data = { selectedId: val('selectedId') };
           break;
         case 'tong_detail':
-          s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbURL: val('thumbURL'), stats: val('stats'), buttonText: val('buttonText'), shareText: val('shareText'), bundleURL: val('bundleURL') };
+          s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbnailURL: val('thumbnailURL'), stats: val('stats'), buttonText: val('buttonText'), shareText: val('shareText'), bundleURL: val('bundleURL') };
           s.action = val('tongId') ? { type: 'open_webview', tongId: val('tongId'), bundleURL: val('bundleURL') } : null;
           break;
         case 'section_header':
@@ -447,7 +447,7 @@
           s.action = val('actionRoute') ? { type: 'navigate', route: val('actionRoute') } : null;
           break;
         case 'tong_card':
-          s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbURL: val('thumbURL'), badge: val('badge') };
+          s.data = { tongId: val('tongId'), title: val('title'), subtitle: val('subtitle'), thumbnailURL: val('thumbnailURL'), badge: val('badge') };
           s.action = val('tongId') ? { type: 'open_tong', tongId: val('tongId') } : null;
           break;
       }

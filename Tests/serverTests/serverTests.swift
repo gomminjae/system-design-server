@@ -152,7 +152,7 @@ struct serverTests {
             // 승인된 personality 통 1개
             let tong = Tong(
                 type: "quiz", title: "성격테스트", subtitle: "재밌음",
-                thumbURL: "https://img/x.png", bundleURL: "https://b/x",
+                thumbnailURL: "https://img/x.png", bundleURL: "https://b/x",
                 version: "1.0", category: "personality", ageRating: "all", status: .approved
             )
             try await tong.save(on: app.db)
@@ -192,7 +192,7 @@ struct serverTests {
         type: "quiz",
         title: "Test Tong",
         subtitle: nil,
-        thumbURL: nil,
+        thumbnailURL: nil,
         bundleURL: "https://example.com",
         version: "1.0.0",
         category: "personality",
