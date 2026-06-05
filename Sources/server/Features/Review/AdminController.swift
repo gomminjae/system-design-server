@@ -13,6 +13,9 @@ struct AdminController: RouteCollection {
         // 화면 관리 CMS 페이지
         admin.get("screens", use: self.screensPage)
         admin.get("screens", ":screenId", "edit", use: self.screenEditPage)
+        // 카드뉴스 CMS 페이지
+        admin.get("card-news", use: self.cardNewsPage)
+        admin.get("card-news", ":cardNewsId", "edit", use: self.cardNewsEditPage)
     }
 
     @Sendable
@@ -63,6 +66,28 @@ struct AdminController: RouteCollection {
         let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
         return try await req.view.render("admin/screen-edit", [
             "screenId": screenId,
+            "adminUser": adminUser,
+            "adminPassword": adminPassword
+        ]).get()
+    }
+
+    @Sendable
+    func cardNewsPage(req: Request) async throws -> View {
+        let adminUser = Environment.get("ADMIN_USER") ?? "admin"
+        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
+        return try await req.view.render("admin/card-news", [
+            "adminUser": adminUser,
+            "adminPassword": adminPassword
+        ]).get()
+    }
+
+    @Sendable
+    func cardNewsEditPage(req: Request) async throws -> View {
+        let cardNewsId = try req.parameters.require("cardNewsId", as: String.self)
+        let adminUser = Environment.get("ADMIN_USER") ?? "admin"
+        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
+        return try await req.view.render("admin/card-news-edit", [
+            "cardNewsId": cardNewsId,
             "adminUser": adminUser,
             "adminPassword": adminPassword
         ]).get()

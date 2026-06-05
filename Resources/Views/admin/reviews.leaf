@@ -19,6 +19,7 @@
       <div class="brand"><span class="logo">🫙</span> 통스통스</div>
       <a class="nav-item active" href="/admin"><span class="ico">📥</span> 심사 목록</a>
       <a class="nav-item" href="/admin/screens"><span class="ico">📱</span> 화면 관리</a>
+      <a class="nav-item" href="/admin/card-news"><span class="ico">🗞</span> 카드뉴스</a>
     </aside>
 
     <main class="content">

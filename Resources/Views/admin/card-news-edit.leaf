@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>통스통스 · 카드뉴스 편집</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  #extend("admin/styles")
+  <style>
+    .content { max-width: 1240px; }
+    .layout { display: flex; gap: 32px; }
+    .editor { flex: 1; min-width: 0; }
+    .preview-wrap { width: 375px; flex-shrink: 0; position: sticky; top: 32px; align-self: flex-start; }
+    .toolbar { display: flex; gap: 8px; align-items: center; margin: 0; }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+    .panel h3 { margin: 0 0 14px; font-size: 15px; font-weight: 700; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+    .field input, .field select, .field textarea { width: 100%; }
+    .field textarea { height: 70px; resize: vertical; }
+    .row2 { display: flex; gap: 12px; }
+    .row2 > * { flex: 1; }
+    .check { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-sub); }
+    .check input { width: auto; }
+
+    .page-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 10px 0; display: flex; gap: 12px; box-shadow: var(--shadow); }
+    .page-item .handle { cursor: grab; font-size: 18px; color: var(--text-cap); user-select: none; padding-top: 6px; }
+    .page-item .body { flex: 1; min-width: 0; }
+    .page-item .pno { font-size: 12px; font-weight: 700; color: var(--text-cap); margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .sortable-ghost { opacity: 0.4; }
+
+    /* 프리뷰 폰 */
+    .preview-label { font-size: 13px; font-weight: 700; color: var(--text-cap); margin-bottom: 12px; text-align: center; }
+    .phone { width: 375px; height: 720px; border: 8px solid #191f28; border-radius: 44px; overflow: hidden; background: #f8f9fa; position: relative; box-shadow: var(--shadow-pop); }
+    .phone-notch { width: 130px; height: 30px; background: #191f28; border-radius: 0 0 18px 18px; margin: 0 auto; }
+    .phone-screen { height: calc(100% - 30px); }
+    .pv-swipe { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .pv-swipe::-webkit-scrollbar { display: none; }
+    .pv-page { min-width: 100%; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; color: #fff; }
+    .pv-page img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .pv-page .txt { position: relative; z-index: 1; text-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+    .pv-page h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; }
+    .pv-page p { margin: 0; font-size: 14px; line-height: 1.5; }
+    .pv-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-cap); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { flex-direction: column; }
+      .preview-wrap { width: 100%; position: static; display: flex; flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="logo">🫙</span> 통스통스</div>
+      <a class="nav-item" href="/admin"><span class="ico">📥</span> 심사 목록</a>
+      <a class="nav-item" href="/admin/screens"><span class="ico">📱</span> 화면 관리</a>
+      <a class="nav-item active" href="/admin/card-news"><span class="ico">🗞</span> 카드뉴스</a>
+    </aside>
+
+    <main class="content">
+      <p class="crumb"><a href="/admin/card-news">카드뉴스</a> › <b id="title-nav">편집</b></p>
+      <div class="layout">
+        <div class="editor">
+          <div class="page-head">
+            <h1 id="page-title">카드뉴스 편집</h1>
+            <div class="toolbar">
+              <span class="badge" id="publish-badge">로딩중</span>
+              <button class="btn btn-sm btn-success" id="publish-btn" onclick="togglePublish()">발행</button>
+              <button class="btn btn-sm btn-primary" onclick="save()">저장</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>기본 정보</h3>
+            <div class="field"><label>제목</label><input id="f-title"></div>
+            <div class="field"><label>부제목</label><input id="f-subtitle"></div>
+            <div class="row2">
+              <div class="field"><label>카테고리</label><select id="f-category"></select></div>
+              <div class="field"><label>대표 이미지 URL (비우면 첫 페이지)</label><input id="f-thumbnail" placeholder="자동"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>수익화</h3>
+            <label class="check"><input type="checkbox" id="f-sponsored"> 스폰서 콘텐츠</label>
+            <div class="row2" style="margin-top:10px;">
+              <div class="field"><label>스폰서명</label><input id="f-sponsor-name"></div>
+              <div class="field"><label>스폰서 링크</label><input id="f-sponsor-link"></div>
+            </div>
+            <label class="check"><input type="checkbox" id="f-premium"> 프리미엄(유료)</label>
+          </div>
+
+          <div class="panel">
+            <h3>페이지 (드래그로 순서 변경)</h3>
+            <div id="page-list"></div>
+            <button class="btn btn-primary" onclick="addPage()" style="margin-top:10px;">+ 페이지 추가</button>
+          </div>
+        </div>
+
+        <div class="preview-wrap">
+          <div class="preview-label">미리보기 (좌우 스와이프)</div>
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="phone-screen"><div class="pv-swipe" id="preview"></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const cardNewsId = '#(cardNewsId)';
+    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
+    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+    let data = null;
+
+    async function loadCategories(selected) {
+      const cats = (await (await fetch('/categories')).json()).data;
+      document.getElementById('f-category').innerHTML =
+        cats.filter(c => c.slug !== 'cardnews')
+            .map(c => `<option value="${c.slug}" ${c.slug===selected?'selected':''}>${c.emoji||''} ${c.name}</option>`).join('');
+    }
+
+    async function load() {
+      data = (await (await fetch('/admin/api/card-news/' + cardNewsId, { headers })).json()).data;
+      document.getElementById('page-title').textContent = data.title + ' 편집';
+      document.getElementById('title-nav').textContent = data.title;
+      document.getElementById('f-title').value = data.title || '';
+      document.getElementById('f-subtitle').value = data.subtitle || '';
+      document.getElementById('f-thumbnail').value = data.thumbnailURL || '';
+      document.getElementById('f-sponsored').checked = !!data.isSponsored;
+      document.getElementById('f-sponsor-name').value = data.sponsorName || '';
+      document.getElementById('f-sponsor-link').value = data.sponsorLink || '';
+      document.getElementById('f-premium').checked = !!data.isPremium;
+      await loadCategories(data.category);
+      updateBadge(data.status === 'published');
+      renderPages(data.pages || []);
+    }
+
+    function updateBadge(pub) {
+      const b = document.getElementById('publish-badge');
+      b.textContent = pub ? '발행중' : '미발행';
+      b.className = 'badge ' + (pub ? 'published' : 'draft');
+      document.getElementById('publish-btn').textContent = pub ? '비발행' : '발행';
+    }
+
+    function pageCard(p) {
+      // p: {id?, imageURL, title, body, bgColor}
+      return `<div class="page-item" data-id="${p.id||''}">
+        <span class="handle">☰</span>
+        <div class="body">
+          <div class="pno"><span class="page-no"></span>
+            <button class="btn-sm btn-danger" style="border:0;border-radius:8px;cursor:pointer;" onclick="this.closest('.page-item').remove();syncNumbers();renderPreview()">삭제</button>
+          </div>
+          <div class="field"><label>이미지 URL</label><input data-f="imageURL" value="${p.imageURL||''}" oninput="renderPreview()"></div>
+          <div class="row2">
+            <div class="field"><label>제목</label><input data-f="title" value="${p.title||''}" oninput="renderPreview()"></div>
+            <div class="field"><label>배경색</label><input data-f="bgColor" value="${p.bgColor||''}" placeholder="#191f28" oninput="renderPreview()"></div>
+          </div>
+          <div class="field"><label>본문</label><textarea data-f="body" oninput="renderPreview()">${p.body||''}</textarea></div>
+        </div>
+      </div>`;
+    }
+
+    function renderPages(pages) {
+      const list = document.getElementById('page-list');
+      list.innerHTML = pages.map(pageCard).join('');
+      new Sortable(list, { handle: '.handle', ghostClass: 'sortable-ghost', animation: 200,
+        onEnd: () => { syncNumbers(); renderPreview(); } });
+      syncNumbers();
+      renderPreview();
+    }
+
+    function syncNumbers() {
+      document.querySelectorAll('#page-list .page-item .page-no')
+        .forEach((el, i) => el.textContent = '페이지 ' + (i + 1));
+    }
+
+    function addPage() {
+      document.getElementById('page-list').insertAdjacentHTML('beforeend', pageCard({}));
+      syncNumbers(); renderPreview();
+    }
+
+    function collectPages() {
+      return Array.from(document.querySelectorAll('#page-list .page-item')).map(el => {
+        const get = f => el.querySelector(`[data-f="${f}"]`).value.trim();
+        const id = el.getAttribute('data-id');
+        const p = { imageURL: get('imageURL'), title: get('title') || null, body: get('body') || null, bgColor: get('bgColor') || null };
+        if (id) p.id = id;
+        return p;
+      });
+    }
+
+    function renderPreview() {
+      const pages = collectPages();
+      const pv = document.getElementById('preview');
+      if (!pages.length) { pv.innerHTML = '<div class="pv-empty">페이지를 추가하세요</div>'; return; }
+      pv.innerHTML = pages.map(p => `
+        <div class="pv-page" style="background:${p.bgColor||'#3182f6'}">
+          ${p.imageURL?`<img src="${p.imageURL}">`:''}
+          <div class="txt">${p.title?`<h2>${p.title}</h2>`:''}${p.body?`<p>${p.body.replace(/\n/g,'<br>')}</p>`:''}</div>
+        </div>`).join('');
+    }
+
+    async function save() {
+      const body = {
+        id: cardNewsId,
+        title: document.getElementById('f-title').value.trim(),
+        subtitle: document.getElementById('f-subtitle').value.trim() || null,
+        thumbnailURL: document.getElementById('f-thumbnail').value.trim() || null,
+        category: document.getElementById('f-category').value,
+        isSponsored: document.getElementById('f-sponsored').checked,
+        sponsorName: document.getElementById('f-sponsor-name').value.trim() || null,
+        sponsorLink: document.getElementById('f-sponsor-link').value.trim() || null,
+        isPremium: document.getElementById('f-premium').checked,
+        pages: collectPages()
+      };
+      const res = await fetch('/admin/api/card-news', { method: 'POST', headers, body: JSON.stringify(body) });
+      if (res.ok) { data = (await res.json()).data; renderPages(data.pages || []); alert('저장되었습니다.'); }
+      else alert('저장 실패: ' + res.status);
+    }
+
+    async function togglePublish() {
+      const res = await fetch('/admin/api/card-news/' + cardNewsId + '/publish', { method: 'PUT', headers });
+      updateBadge((await res.json()).data.status === 'published');
+    }
+
+    load();
+  </script>
+</body>
+</html>

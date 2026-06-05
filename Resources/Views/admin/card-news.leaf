@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>통스통스 · 카드뉴스</title>
+  #extend("admin/styles")
+  <style>
+    .create-card { display: none; }
+    .create-card.show { display: block; }
+    .create-card .field { margin-bottom: 10px; }
+    .create-card label { display: block; font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+    .create-card input, .create-card select { width: 100%; }
+    .cn-title { font-size: 17px; font-weight: 700; }
+    .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 7px; margin-left: 6px; }
+    .tag.sponsor { background: #fff4e6; color: #e8830c; }
+    .tag.premium { background: #f3e8ff; color: #8b3df0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="logo">🫙</span> 통스통스</div>
+      <a class="nav-item" href="/admin"><span class="ico">📥</span> 심사 목록</a>
+      <a class="nav-item" href="/admin/screens"><span class="ico">📱</span> 화면 관리</a>
+      <a class="nav-item active" href="/admin/card-news"><span class="ico">🗞</span> 카드뉴스</a>
+    </aside>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>카드뉴스</h1>
+          <p class="sub">인스타 형식 스와이프 콘텐츠를 만들고 발행해요</p>
+        </div>
+        <button class="btn btn-primary" onclick="showCreate()">+ 새 카드뉴스</button>
+      </div>
+
+      <div id="create-form" class="create-card card">
+        <div class="field"><label>제목</label><input id="new-title" placeholder="예: MBTI 연애 스타일"></div>
+        <div class="field"><label>카테고리</label><select id="new-category"></select></div>
+        <button class="btn btn-primary" onclick="createCardNews()">생성</button>
+        <button class="btn btn-ghost" onclick="hideCreate()">취소</button>
+      </div>
+
+      <div id="list"></div>
+    </main>
+  </div>
+
+  <script>
+    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
+    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+
+    async function loadCategories() {
+      const res = await fetch('/categories');
+      const cats = (await res.json()).data;
+      document.getElementById('new-category').innerHTML =
+        cats.filter(c => c.slug !== 'cardnews').map(c => `<option value="${c.slug}">${c.emoji||''} ${c.name}</option>`).join('');
+    }
+
+    async function loadList() {
+      const res = await fetch('/admin/api/card-news', { headers });
+      const items = (await res.json()).data;
+      const el = document.getElementById('list');
+      if (!items.length) { el.innerHTML = '<div class="empty"><span class="emoji">🗞</span>등록된 카드뉴스가 없어요.</div>'; return; }
+      el.innerHTML = items.map(c => `
+        <div class="card row">
+          <div>
+            <p class="cn-title">${c.title}
+              <span class="badge ${c.status==='published'?'published':'draft'}">${c.status==='published'?'발행중':'미발행'}</span>
+              ${c.isSponsored?'<span class="tag sponsor">스폰서</span>':''}
+              ${c.isPremium?'<span class="tag premium">프리미엄</span>':''}
+            </p>
+            <p class="meta" style="margin-top:6px;">${c.category} · ${c.pageCount}장</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="/admin/card-news/${c.id}/edit">편집</a>
+        </div>`).join('');
+    }
+
+    function showCreate() { document.getElementById('create-form').classList.add('show'); }
+    function hideCreate() { document.getElementById('create-form').classList.remove('show'); }
+
+    async function createCardNews() {
+      const title = document.getElementById('new-title').value.trim();
+      const category = document.getElementById('new-category').value;
+      if (!title) return alert('제목을 입력하세요.');
+      const res = await fetch('/admin/api/card-news', {
+        method: 'POST', headers,
+        body: JSON.stringify({ title, category, isSponsored: false, isPremium: false, pages: [] })
+      });
+      const created = (await res.json()).data;
+      location.href = '/admin/card-news/' + created.id + '/edit';
+    }
+
+    loadCategories();
+    loadList();
+  </script>
+</body>
+</html>
