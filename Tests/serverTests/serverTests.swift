@@ -186,6 +186,82 @@ struct serverTests {
         }
     }
 
+    @Test("Card-news admin CRUD with page id-preserving diff-merge")
+    func cardNewsAdmin() async throws {
+        try await withApp { app in
+            let basic = BasicAuthorization(username: "admin", password: "dev-password")
+
+            // 1) 생성 (페이지 2장)
+            var createdID: UUID!
+            var page0ID: UUID!
+            try await app.testing().test(.POST, "admin/api/card-news", beforeRequest: { req in
+                req.headers.basicAuthorization = basic
+                try req.content.encode(CardNewsUpsertRequest(
+                    id: nil, title: "MBTI 연애", subtitle: nil, thumbnailURL: nil,
+                    category: "love", isSponsored: false, sponsorName: nil, sponsorLink: nil, isPremium: false,
+                    pages: [
+                        CardNewsPageInput(id: nil, imageURL: "https://i/0", title: "ENFP", body: nil, bgColor: nil),
+                        CardNewsPageInput(id: nil, imageURL: "https://i/1", title: "INTJ", body: nil, bgColor: nil),
+                    ]
+                ))
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let body = try res.content.decode(APIResponse<CardNewsDetailDTO>.self).data
+                #expect(body.pages.count == 2)
+                createdID = body.id
+                let saved = try await CardNewsPage.query(on: app.db)
+                    .filter(\.$cardNews.$id == createdID).sort(\.$pageIndex).all()
+                page0ID = saved.first?.id
+            })
+
+            // 2) 수정 — 0번 페이지는 id 유지하며 텍스트 변경, 1번 삭제, 새 페이지 추가
+            try await app.testing().test(.POST, "admin/api/card-news", beforeRequest: { req in
+                req.headers.basicAuthorization = basic
+                try req.content.encode(CardNewsUpsertRequest(
+                    id: createdID, title: "MBTI 연애(수정)", subtitle: nil, thumbnailURL: nil,
+                    category: "love", isSponsored: false, sponsorName: nil, sponsorLink: nil, isPremium: false,
+                    pages: [
+                        CardNewsPageInput(id: page0ID, imageURL: "https://i/0", title: "ENFP 수정", body: nil, bgColor: nil),
+                        CardNewsPageInput(id: nil, imageURL: "https://i/new", title: "NEW", body: nil, bgColor: nil),
+                    ]
+                ))
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let body = try res.content.decode(APIResponse<CardNewsDetailDTO>.self).data
+                #expect(body.title == "MBTI 연애(수정)")
+                #expect(body.pages.count == 2)
+                #expect(body.pages.first?.title == "ENFP 수정")
+                // 0번 페이지 id가 보존됐는지
+                let kept = try await CardNewsPage.query(on: app.db)
+                    .filter(\.$cardNews.$id == createdID).filter(\.$pageIndex == 0).first()
+                #expect(kept?.id == page0ID)
+            })
+
+            // 3) 발행 전엔 공개 목록에 안 보임
+            try await app.testing().test(.GET, "card-news", afterResponse: { res async throws in
+                let body = try res.content.decode(APIResponse<CursorList<CardNewsListItem>>.self).data
+                #expect(body.items.isEmpty)
+            })
+
+            // 4) 발행 토글 → 공개 노출
+            try await app.testing().test(.PUT, "admin/api/card-news/\(createdID!)/publish", beforeRequest: { req in
+                req.headers.basicAuthorization = basic
+            }, afterResponse: { res async in #expect(res.status == .ok) })
+            try await app.testing().test(.GET, "card-news", afterResponse: { res async throws in
+                let body = try res.content.decode(APIResponse<CursorList<CardNewsListItem>>.self).data
+                #expect(body.items.count == 1)
+            })
+
+            // 5) 삭제 → 페이지도 함께 사라짐(CASCADE)
+            try await app.testing().test(.DELETE, "admin/api/card-news/\(createdID!)", beforeRequest: { req in
+                req.headers.basicAuthorization = basic
+            }, afterResponse: { res async in #expect(res.status == .noContent) })
+            let remaining = try await CardNewsPage.query(on: app.db)
+                .filter(\.$cardNews.$id == createdID).count()
+            #expect(remaining == 0)
+        }
+    }
+
     @Test("Screen resolves dynamic tong_list and category chips")
     func screenDynamicBinding() async throws {
         try await withApp { app in
