@@ -31,6 +31,7 @@ func routes(_ app: Application) throws {
     let api = app.grouped(APIErrorMiddleware())
     try api.register(collection: CatalogController())
     try api.register(collection: CategoryController())
+    try api.register(collection: CardNewsController())
     try api.register(collection: SubmissionController())
     try api.register(collection: AuthController())
     try api.register(collection: AppController())

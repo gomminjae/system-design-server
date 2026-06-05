@@ -22,6 +22,10 @@ extension Request {
 
     var categoryService: CategoryService { CategoryService(db: self.db) }
 
+    var cardNewsRepository: any CardNewsRepository { FluentCardNewsRepository(db: self.db) }
+
+    var cardNewsService: CardNewsService { CardNewsService(repository: cardNewsRepository) }
+
     var screenResolver: ScreenResolver {
         ScreenResolver(tongs: tongRepository, categories: categoryService)
     }

@@ -31,6 +31,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(SeedCategories())
     // tongs.owner_id → users.id FK (users 생성 이후 실행돼야 함)
     app.migrations.add(AddTongOwnerForeignKey())
+    app.migrations.add(CreateCardNews())
+    app.migrations.add(CreateCardNewsPage())
 
     // JWT 서명 키 (개발용 HMAC, 운영은 RSA/EC로 교체)
     let jwtSecret = Environment.get("JWT_SECRET") ?? "dev-jwt-secret-tongstongs"

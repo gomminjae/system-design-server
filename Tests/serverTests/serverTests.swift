@@ -146,6 +146,46 @@ struct serverTests {
         }
     }
 
+    @Test("Card-news list and detail (paging, page order, thumbnail fallback)")
+    func cardNews() async throws {
+        try await withApp { app in
+            // 발행 카드뉴스 + 페이지 2장(일부러 역순 저장 → 정렬 검증). thumbnail 없음 → 첫 페이지 폴백
+            let cn = CardNews(title: "MBTI 연애", category: "love", status: .published,
+                              pageCount: 2, isSponsored: true, sponsorName: "어떤브랜드")
+            try await cn.save(on: app.db)
+            try await CardNewsPage(cardNewsID: cn.id!, pageIndex: 1, imageURL: "https://i/1", title: "INTJ").save(on: app.db)
+            try await CardNewsPage(cardNewsID: cn.id!, pageIndex: 0, imageURL: "https://i/0", title: "ENFP").save(on: app.db)
+            // 미발행은 노출 안 됨
+            let draft = CardNews(title: "초안", category: "love", status: .draft)
+            try await draft.save(on: app.db)
+
+            // 목록 — 발행본 1개, pageCount·스폰서 플래그
+            try await app.testing().test(.GET, "card-news", afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let body = try res.content.decode(APIResponse<CursorList<CardNewsListItem>>.self).data
+                #expect(body.items.count == 1)
+                #expect(body.items.first?.pageCount == 2)
+                #expect(body.items.first?.isSponsored == true)
+                #expect(body.items.first?.sponsorName == "어떤브랜드")
+            })
+
+            // 상세 — 페이지 정렬(0,1) + 썸네일 폴백(첫 페이지 이미지)
+            try await app.testing().test(.GET, "card-news/\(cn.id!)", afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let body = try res.content.decode(APIResponse<CardNewsDetailDTO>.self).data
+                #expect(body.pages.count == 2)
+                #expect(body.pages.first?.pageIndex == 0)
+                #expect(body.pages.first?.title == "ENFP")
+                #expect(body.thumbnailURL == "https://i/0")   // 폴백
+            })
+
+            // 미발행 상세 → 404
+            try await app.testing().test(.GET, "card-news/\(draft.id!)", afterResponse: { res async in
+                #expect(res.status == .notFound)
+            })
+        }
+    }
+
     @Test("Screen resolves dynamic tong_list and category chips")
     func screenDynamicBinding() async throws {
         try await withApp { app in
