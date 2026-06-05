@@ -16,7 +16,7 @@ struct CatalogController: RouteCollection {
     func catalog(req: Request) async throws -> APIResponse<CursorList<TongDTO>> {
         let category = req.query[String.self, at: "category"]
         let after = req.query[String.self, at: "after"].flatMap { UUID(uuidString: $0) }
-        let limit = req.query[Int.self, at: "limit"] ?? 20
+        let limit = min(req.query[Int.self, at: "limit"] ?? 20, 50)
         let result = try await req.tongService.catalog(category: category, after: after, limit: limit)
         return APIResponse(result)
     }

@@ -19,22 +19,33 @@ struct ScreenResolver {
         }
         let tongsByID = try await tongs.approvedByIDs(referencedIDs)
 
-        var resolved: [Section] = []
-        for section in sections {
-            switch section.type {
-            case .tongList:
-                resolved.append(try await resolveTongList(section))
-            case .tongCard, .tongDetail:
-                resolved.append(resolveTongRef(section, tongsByID: tongsByID))
-            case .categoryChips:
-                resolved.append(try await resolveChips(section))
-            case .cardNewsList:
-                resolved.append(try await resolveCardNewsList(section))
-            case .cardNewsCard:
-                resolved.append(try await resolveCardNewsCard(section))
-            default:
-                resolved.append(section)
+        // 각 섹션을 병렬로 resolve (독립적인 DB 쿼리를 동시에 실행).
+        let resolved = try await withThrowingTaskGroup(of: (Int, Section).self) { group in
+            for (index, section) in sections.enumerated() {
+                group.addTask {
+                    let result: Section
+                    switch section.type {
+                    case .tongList:
+                        result = try await resolveTongList(section)
+                    case .tongCard, .tongDetail:
+                        result = resolveTongRef(section, tongsByID: tongsByID)
+                    case .categoryChips:
+                        result = try await resolveChips(section)
+                    case .cardNewsList:
+                        result = try await resolveCardNewsList(section)
+                    case .cardNewsCard:
+                        result = try await resolveCardNewsCard(section)
+                    default:
+                        result = section
+                    }
+                    return (index, result)
+                }
             }
+            var ordered = Array(repeating: sections[0], count: sections.count)
+            for try await (index, section) in group {
+                ordered[index] = section
+            }
+            return ordered
         }
         return resolved
     }
