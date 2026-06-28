@@ -112,8 +112,7 @@
 
   <script>
     const cardNewsId = '#(cardNewsId)';
-    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
-    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+    const headers = { 'Content-Type': 'application/json' };
     let data = null;
 
     async function loadCategories(selected) {

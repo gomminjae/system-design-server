@@ -51,8 +51,7 @@
   </div>
 
   <script>
-    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
-    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+    const headers = { 'Content-Type': 'application/json' };
 
     async function loadScreens() {
       const res = await fetch('/admin/api/screens', { headers });

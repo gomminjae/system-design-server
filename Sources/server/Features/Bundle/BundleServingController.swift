@@ -41,26 +41,7 @@ struct BundleServingController: RouteCollection {
 
     private static func fileResponse(data: Data, path: String) -> Response {
         let response = Response(status: .ok, body: .init(data: data))
-        response.headers.contentType = contentType(for: path)
+        response.headers.contentType = BundleContentType.mediaType(for: path)
         return response
-    }
-
-    private static func contentType(for path: String) -> HTTPMediaType {
-        guard let ext = path.split(separator: ".").last else { return .plainText }
-        switch ext.lowercased() {
-        case "html", "htm": return .html
-        case "css": return .css
-        case "js", "mjs": return HTTPMediaType(type: "text", subType: "javascript")
-        case "json": return .json
-        case "png": return .png
-        case "jpg", "jpeg": return .jpeg
-        case "gif": return .gif
-        case "svg": return HTTPMediaType(type: "image", subType: "svg+xml")
-        case "ico": return HTTPMediaType(type: "image", subType: "x-icon")
-        case "woff": return HTTPMediaType(type: "font", subType: "woff")
-        case "woff2": return HTTPMediaType(type: "font", subType: "woff2")
-        case "webp": return HTTPMediaType(type: "image", subType: "webp")
-        default: return .plainText
-        }
     }
 }

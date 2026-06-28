@@ -18,3 +18,6 @@ Storage/
 .DS_Store
 .vscode/
 .idea/
+
+# MCP 서버 설정 (project_ref 포함 — 시크릿 인접 방지)
+.mcp.json

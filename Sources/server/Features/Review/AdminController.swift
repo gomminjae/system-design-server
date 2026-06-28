@@ -49,47 +49,27 @@ struct AdminController: RouteCollection {
         return req.redirect(to: "/admin")
     }
 
+    // 어드민 비번은 클라이언트로 내려보내지 않는다. 페이지가 Basic Auth로 보호되므로
+    // 브라우저가 같은 origin의 fetch에 자격증명을 자동 첨부한다(leaf에서 헤더 수동 구성 X).
     @Sendable
     func screensPage(req: Request) async throws -> View {
-        let adminUser = Environment.get("ADMIN_USER") ?? "admin"
-        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
-        return try await req.view.render("admin/screens", [
-            "adminUser": adminUser,
-            "adminPassword": adminPassword
-        ]).get()
+        return try await req.view.render("admin/screens").get()
     }
 
     @Sendable
     func screenEditPage(req: Request) async throws -> View {
         let screenId = try req.parameters.require("screenId", as: String.self)
-        let adminUser = Environment.get("ADMIN_USER") ?? "admin"
-        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
-        return try await req.view.render("admin/screen-edit", [
-            "screenId": screenId,
-            "adminUser": adminUser,
-            "adminPassword": adminPassword
-        ]).get()
+        return try await req.view.render("admin/screen-edit", ["screenId": screenId]).get()
     }
 
     @Sendable
     func cardNewsPage(req: Request) async throws -> View {
-        let adminUser = Environment.get("ADMIN_USER") ?? "admin"
-        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
-        return try await req.view.render("admin/card-news", [
-            "adminUser": adminUser,
-            "adminPassword": adminPassword
-        ]).get()
+        return try await req.view.render("admin/card-news").get()
     }
 
     @Sendable
     func cardNewsEditPage(req: Request) async throws -> View {
         let cardNewsId = try req.parameters.require("cardNewsId", as: String.self)
-        let adminUser = Environment.get("ADMIN_USER") ?? "admin"
-        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "dev-password"
-        return try await req.view.render("admin/card-news-edit", [
-            "cardNewsId": cardNewsId,
-            "adminUser": adminUser,
-            "adminPassword": adminPassword
-        ]).get()
+        return try await req.view.render("admin/card-news-edit", ["cardNewsId": cardNewsId]).get()
     }
 }

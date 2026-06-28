@@ -205,8 +205,7 @@
 
   <script>
     const screenId = '#(screenId)';
-    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
-    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+    const headers = { 'Content-Type': 'application/json' };
     let screenData = null;
     let sections = [];
     let editingIndex = -1;

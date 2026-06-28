@@ -19,10 +19,19 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(AddTongOwnerID())
     app.migrations.add(RenameTongThumbnailColumn())
 
-    // 번들 스토리지 (로컬 디스크)
-    let storageDir = app.directory.workingDirectory + "Storage/bundles"
-    let baseURL = Environment.get("BASE_URL") ?? "http://localhost:8080"
-    app.bundleStorage = LocalDiskBundleStorage(baseDirectory: storageDir, baseURL: baseURL)
+    // 번들 스토리지: SUPABASE_URL+SUPABASE_SERVICE_KEY 있으면 Supabase Storage(운영),
+    // 없으면 로컬 디스크(개발/테스트).
+    if let supabaseURL = Environment.get("SUPABASE_URL"),
+       let serviceKey = Environment.get("SUPABASE_SERVICE_KEY") {
+        let projectURL = supabaseURL.hasSuffix("/") ? String(supabaseURL.dropLast()) : supabaseURL
+        let bucket = Environment.get("SUPABASE_BUNDLE_BUCKET") ?? "bundles"
+        app.bundleStorage = SupabaseBundleStorage(
+            projectURL: projectURL, bucket: bucket, serviceKey: serviceKey, client: app.client)
+    } else {
+        let storageDir = app.directory.workingDirectory + "Storage/bundles"
+        let baseURL = Environment.get("BASE_URL") ?? "http://localhost:8080"
+        app.bundleStorage = LocalDiskBundleStorage(baseDirectory: storageDir, baseURL: baseURL)
+    }
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAppVersion())
@@ -36,8 +45,17 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(RemoveCardNewsCategory())
     app.migrations.add(AddCatalogIndexes())
 
-    // JWT 서명 키 (개발용 HMAC, 운영은 RSA/EC로 교체)
-    let jwtSecret = Environment.get("JWT_SECRET") ?? "dev-jwt-secret-tongstongs"
+    // JWT 서명 키. 운영은 JWT_SECRET(32바이트 이상) 필수 — 없으면 부팅 실패(fail-closed).
+    // ⚠️ 소셜 로그인을 붙일 때는 이 자체검증을 Supabase Auth JWT(JWKS) 검증으로 교체할 것.
+    //    현재 AuthService는 IdP 토큰을 이 로컬 HMAC 키로 검증하므로 iss/aud 미검증 상태다.
+    let jwtSecret: String
+    if let secret = Environment.get("JWT_SECRET"), secret.utf8.count >= 32 {
+        jwtSecret = secret
+    } else if app.environment == .production {
+        fatalError("JWT_SECRET(32바이트 이상) 환경변수가 운영에 필요합니다.")
+    } else {
+        jwtSecret = "dev-jwt-secret-tongstongs"
+    }
     await app.jwt.keys.add(hmac: HMACKey(from: jwtSecret), digestAlgorithm: .sha256)
 
     // 개발/테스트 편의: 부팅 시 자동 마이그레이션.

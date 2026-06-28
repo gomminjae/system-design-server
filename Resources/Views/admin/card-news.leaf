@@ -47,8 +47,7 @@
   </div>
 
   <script>
-    const AUTH = 'Basic ' + btoa('#(adminUser):#(adminPassword)');
-    const headers = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+    const headers = { 'Content-Type': 'application/json' };
 
     async function loadCategories() {
       const res = await fetch('/categories');
