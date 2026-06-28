@@ -3,6 +3,7 @@ import FluentPostgresDriver
 import FluentSQLiteDriver
 import JWTKit
 import Leaf
+import NIOSSL
 import Vapor
 
 // configures your application
@@ -79,8 +80,13 @@ private func configureDatabase(_ app: Application) throws {
     }
 
     if let databaseURL = Environment.get("DATABASE_URL") {
-        // sslmode 등 TLS 옵션은 URL 쿼리(?sslmode=require)로 전달한다.
-        let config = try SQLPostgresConfiguration(url: databaseURL)
+        var config = try SQLPostgresConfiguration(url: databaseURL)
+        // Supabase pooler는 TLS 필수지만 그 인증서가 시스템 CA 체인 풀 검증을 통과하지 못한다.
+        // 암호화는 유지하되 인증서 검증은 끈다.
+        // ponytail: MVP 수준. 강화하려면 Supabase CA 인증서를 trust roots에 추가하고 .fullVerification.
+        var tls = TLSConfiguration.makeClientConfiguration()
+        tls.certificateVerification = .none
+        config.coreConfiguration.tls = .require(try NIOSSLContext(configuration: tls))
         app.databases.use(.postgres(configuration: config), as: .psql)
         return
     }
