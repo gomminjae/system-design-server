@@ -5,7 +5,7 @@ import Vapor
 protocol TongRepository: Sendable {
     func find(_ id: UUID) async throws -> Tong?
     func save(_ tong: Tong) async throws
-    func getApproved(category: String?, after: UUID?, limit: Int) async throws -> [Tong]
+    func getApproved(category: String?, market: Market, after: UUID?, limit: Int) async throws -> [Tong]
     func pendingReview() async throws -> [Tong]
     func approvedByIDs(_ ids: [UUID]) async throws -> [UUID: Tong]
     /// 특정 소유자가 제출한 통 전체 (최신순). 상태 무관 — "내 제출 목록"용.
@@ -34,9 +34,10 @@ struct FluentTongRepository: TongRepository {
             .all()
     }
 
-    func getApproved(category: String?, after cursor: UUID?, limit: Int) async throws -> [Tong] {
+    func getApproved(category: String?, market: Market, after cursor: UUID?, limit: Int) async throws -> [Tong] {
         var query = Tong.query(on: db)
             .filter(\.$status == .approved)
+            .filter(\.$market ~~ Market.queryValues(for: market))
 
         if let category {
             query = query.filter(\.$category == category)

@@ -14,6 +14,7 @@ struct TongSubmission: Content {
     var version: String
     var category: String
     var ageRating: String
+    var market: Market?
     var submitterContact: String?
 
     func toModel() -> Tong {
@@ -26,6 +27,7 @@ struct TongSubmission: Content {
             version: version,
             category: category,
             ageRating: ageRating,
+            market: market ?? .ko,
             status: .submitted,
             submitterContact: submitterContact
         )

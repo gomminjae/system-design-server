@@ -41,6 +41,9 @@ final class Tong: Model, @unchecked Sendable {
     @Field(key: "age_rating")
     var ageRating: String
 
+    @Field(key: "market")
+    var market: Market
+
     @Field(key: "status")
     var status: TongStatus
 
@@ -76,6 +79,7 @@ final class Tong: Model, @unchecked Sendable {
         version: String,
         category: String,
         ageRating: String,
+        market: Market = .ko,
         status: TongStatus = .submitted,
         submitterContact: String? = nil,
         ownerID: UUID? = nil
@@ -89,6 +93,7 @@ final class Tong: Model, @unchecked Sendable {
         self.version = version
         self.category = category
         self.ageRating = ageRating
+        self.market = market
         self.status = status
         self.submitterContact = submitterContact
         self.$owner.id = ownerID
@@ -105,6 +110,7 @@ final class Tong: Model, @unchecked Sendable {
             version: self.version,
             category: self.category,
             ageRating: self.ageRating,
+            market: self.market,
             status: self.status,
             rejectionReason: self.rejectionReason,
             createdAt: self.createdAt

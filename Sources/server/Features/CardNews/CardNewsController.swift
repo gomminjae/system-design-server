@@ -24,7 +24,7 @@ struct CardNewsController: RouteCollection {
         let category = req.query[String.self, at: "category"]
         let after = req.query[String.self, at: "after"].flatMap { UUID(uuidString: $0) }
         let limit = min(req.query[Int.self, at: "limit"] ?? 20, 50)
-        let result = try await req.cardNewsService.list(category: category, after: after, limit: limit)
+        let result = try await req.cardNewsService.list(category: category, market: req.market, after: after, limit: limit)
         return APIResponse(result)
     }
 

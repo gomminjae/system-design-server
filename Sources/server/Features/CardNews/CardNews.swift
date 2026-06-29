@@ -24,6 +24,9 @@ final class CardNews: Model, @unchecked Sendable {
     @Field(key: "category")
     var category: String
 
+    @Field(key: "market")
+    var market: Market
+
     @Field(key: "status")
     var status: CardNewsStatus
 
@@ -62,6 +65,7 @@ final class CardNews: Model, @unchecked Sendable {
         subtitle: String? = nil,
         thumbnailURL: String? = nil,
         category: String,
+        market: Market = .ko,
         status: CardNewsStatus = .draft,
         pageCount: Int = 0,
         isSponsored: Bool = false,
@@ -74,6 +78,7 @@ final class CardNews: Model, @unchecked Sendable {
         self.subtitle = subtitle
         self.thumbnailURL = thumbnailURL
         self.category = category
+        self.market = market
         self.status = status
         self.pageCount = pageCount
         self.isSponsored = isSponsored

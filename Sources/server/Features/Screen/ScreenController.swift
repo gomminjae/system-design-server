@@ -11,7 +11,9 @@ struct ScreenController: RouteCollection {
     @Sendable
     func getScreen(req: Request) async throws -> APIResponse<ScreenResponse> {
         let screenId = try req.parameters.require("screenId", as: String.self)
-        if let cached = try await req.cache.get(ScreenResponse.self, id: screenId) {
+        let market = req.market
+        let cacheID = "\(screenId):\(market.rawValue)"
+        if let cached = try await req.cache.get(ScreenResponse.self, id: cacheID) {
             return APIResponse(cached)
         }
 
@@ -31,14 +33,14 @@ struct ScreenController: RouteCollection {
         }
 
         // 동적 바인딩: 저장된 참조를 실제 카탈로그/카테고리 데이터로 채운다.
-        let resolved = try await req.screenResolver.resolve(sections)
+        let resolved = try await req.screenResolver.resolve(sections, market: market)
 
         let response = ScreenResponse(
             screenId: screen.screenId,
             title: screen.title,
             sections: resolved
         )
-        try await req.cache.set(response, id: screenId, expiresIn: .seconds(60))
+        try await req.cache.set(response, id: cacheID, expiresIn: .seconds(60))
         return APIResponse(response)
     }
 }
@@ -119,7 +121,7 @@ struct ScreenAdminController: RouteCollection {
             )
         }
         try await screen.save(on: req.db)
-        try await req.cache.delete(ScreenResponse.self, id: body.screenId)
+        try await invalidateCache(body.screenId, on: req)
 
         return APIResponse(ScreenDetailResponse(
             screenId: screen.screenId,
@@ -141,7 +143,7 @@ struct ScreenAdminController: RouteCollection {
         }
         screen.isPublished.toggle()
         try await screen.save(on: req.db)
-        try await req.cache.delete(ScreenResponse.self, id: screen.screenId)
+        try await invalidateCache(screen.screenId, on: req)
         return APIResponse(ScreenListItem(
             screenId: screen.screenId,
             title: screen.title,
@@ -160,8 +162,15 @@ struct ScreenAdminController: RouteCollection {
             throw APIError.notFound("화면을 찾을 수 없습니다: \(screenId)")
         }
         try await screen.delete(on: req.db)
-        try await req.cache.delete(ScreenResponse.self, id: screen.screenId)
+        try await invalidateCache(screen.screenId, on: req)
         return .noContent
+    }
+
+    /// 화면 캐시는 market별로 분리 저장되므로 모든 market 변형을 지운다.
+    private func invalidateCache(_ screenId: String, on req: Request) async throws {
+        for m in Market.allCases {
+            try await req.cache.delete(ScreenResponse.self, id: "\(screenId):\(m.rawValue)")
+        }
     }
 }
 

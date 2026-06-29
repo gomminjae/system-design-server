@@ -4,8 +4,8 @@ import Vapor
 struct TongService {
     let repository: any TongRepository
 
-    func catalog(category: String?, after: UUID?, limit: Int) async throws -> CursorList<TongDTO> {
-        let tongs = try await repository.getApproved(category: category, after: after, limit: limit)
+    func catalog(category: String?, market: Market, after: UUID?, limit: Int) async throws -> CursorList<TongDTO> {
+        let tongs = try await repository.getApproved(category: category, market: market, after: after, limit: limit)
         let hasMore = tongs.count > limit
         let items = hasMore ? Array(tongs.prefix(limit)) : tongs
         let nextCursor = hasMore ? items.last?.id?.uuidString : nil

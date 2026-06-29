@@ -57,6 +57,7 @@ struct CardNewsAdminController: RouteCollection {
             let trimmedThumbnail = body.thumbnailURL?.trimmingCharacters(in: .whitespaces)
             cardNews.thumbnailURL = (trimmedThumbnail?.isEmpty == false) ? trimmedThumbnail : body.pages.first?.imageURL
             cardNews.category = body.category
+            cardNews.market = body.market ?? .ko
             cardNews.isSponsored = body.isSponsored
             cardNews.sponsorName = body.sponsorName
             cardNews.sponsorLink = body.sponsorLink
@@ -137,6 +138,7 @@ struct CardNewsUpsertRequest: Content {
     var subtitle: String?
     var thumbnailURL: String?
     var category: String
+    var market: Market?
     var isSponsored: Bool
     var sponsorName: String?
     var sponsorLink: String?

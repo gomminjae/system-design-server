@@ -4,8 +4,8 @@ import Vapor
 struct CardNewsService {
     let repository: any CardNewsRepository
 
-    func list(category: String?, after: UUID?, limit: Int) async throws -> CursorList<CardNewsListItem> {
-        let rows = try await repository.published(category: category, after: after, limit: limit)
+    func list(category: String?, market: Market, after: UUID?, limit: Int) async throws -> CursorList<CardNewsListItem> {
+        let rows = try await repository.published(category: category, market: market, after: after, limit: limit)
         let hasMore = rows.count > limit
         let items = hasMore ? Array(rows.prefix(limit)) : rows
         let nextCursor = hasMore ? items.last?.id?.uuidString : nil

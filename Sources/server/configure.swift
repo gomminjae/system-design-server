@@ -45,6 +45,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateCardNewsPage())
     app.migrations.add(RemoveCardNewsCategory())
     app.migrations.add(AddCatalogIndexes())
+    app.migrations.add(AddContentMarket())
 
     // JWT 서명 키. 운영은 JWT_SECRET(32바이트 이상) 필수 — 없으면 부팅 실패(fail-closed).
     // ⚠️ 소셜 로그인을 붙일 때는 이 자체검증을 Supabase Auth JWT(JWKS) 검증으로 교체할 것.

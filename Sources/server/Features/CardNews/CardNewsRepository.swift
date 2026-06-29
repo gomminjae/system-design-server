@@ -4,7 +4,7 @@ import Vapor
 /// 카드뉴스 데이터 접근 추상화.
 protocol CardNewsRepository: Sendable {
     /// 발행된 카드뉴스 (최신순, 커서 페이징). limit+1을 가져와 hasMore 판정.
-    func published(category: String?, after: UUID?, limit: Int) async throws -> [CardNews]
+    func published(category: String?, market: Market, after: UUID?, limit: Int) async throws -> [CardNews]
     /// 발행된 카드뉴스 단건 + 페이지 eager load. 없으면 nil.
     func findPublished(_ id: UUID) async throws -> CardNews?
 }
@@ -12,9 +12,10 @@ protocol CardNewsRepository: Sendable {
 struct FluentCardNewsRepository: CardNewsRepository {
     let db: any Database
 
-    func published(category: String?, after cursor: UUID?, limit: Int) async throws -> [CardNews] {
+    func published(category: String?, market: Market, after cursor: UUID?, limit: Int) async throws -> [CardNews] {
         var query = CardNews.query(on: db)
             .filter(\.$status == .published)
+            .filter(\.$market ~~ Market.queryValues(for: market))
 
         if let category {
             query = query.filter(\.$category == category)

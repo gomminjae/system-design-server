@@ -12,6 +12,7 @@ struct TongDTO: Content {
     var version: String
     var category: String
     var ageRating: String
+    var market: Market
     var status: TongStatus
     var rejectionReason: String?
     var createdAt: Date?

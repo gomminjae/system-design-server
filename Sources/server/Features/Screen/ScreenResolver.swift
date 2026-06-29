@@ -11,7 +11,7 @@ struct ScreenResolver {
     let categories: CategoryService
     let cardNews: any CardNewsRepository
 
-    func resolve(_ sections: [Section]) async throws -> [Section] {
+    func resolve(_ sections: [Section], market: Market) async throws -> [Section] {
         // card/detail이 참조하는 통 id를 모아 한 번에 조회(N+1 방지).
         let referencedIDs = sections.compactMap { section -> UUID? in
             guard section.type == .tongCard || section.type == .tongDetail else { return nil }
@@ -26,15 +26,15 @@ struct ScreenResolver {
                     let result: Section
                     switch section.type {
                     case .tongList:
-                        result = try await resolveTongList(section)
+                        result = try await resolveTongList(section, market: market)
                     case .tongCard, .tongDetail:
-                        result = resolveTongRef(section, tongsByID: tongsByID)
+                        result = resolveTongRef(section, tongsByID: tongsByID, market: market)
                     case .categoryChips:
                         result = try await resolveChips(section)
                     case .cardNewsList:
-                        result = try await resolveCardNewsList(section)
+                        result = try await resolveCardNewsList(section, market: market)
                     case .cardNewsCard:
-                        result = try await resolveCardNewsCard(section)
+                        result = try await resolveCardNewsCard(section, market: market)
                     default:
                         result = section
                     }
@@ -47,14 +47,24 @@ struct ScreenResolver {
             }
             return ordered
         }
-        return resolved
+        // 동적 리스트가 비면(해당 market에 콘텐츠 없음) 섹션 자체를 숨긴다.
+        return resolved.filter { !isEmptyDynamicList($0) }
+    }
+
+    private func isEmptyDynamicList(_ section: Section) -> Bool {
+        guard let slug = section.data.categorySlug, !slug.isEmpty else { return false }
+        switch section.type {
+        case .tongList: return section.data.items?.isEmpty ?? true
+        case .cardNewsList: return section.data.cardNewsItems?.isEmpty ?? true
+        default: return false
+        }
     }
 
     /// card_news_list: categorySlug 지정 시 발행 카드뉴스로 cardNewsItems 채움.
-    private func resolveCardNewsList(_ section: Section) async throws -> Section {
+    private func resolveCardNewsList(_ section: Section, market: Market) async throws -> Section {
         guard let slug = section.data.categorySlug, !slug.isEmpty else { return section }
         let limit = section.data.limit ?? 10
-        let items = try await cardNews.published(category: slug, after: nil, limit: limit)
+        let items = try await cardNews.published(category: slug, market: market, after: nil, limit: limit)
             .prefix(limit)
             .map { $0.toCardNewsItem() }
         var data = section.data
@@ -63,10 +73,11 @@ struct ScreenResolver {
     }
 
     /// card_news_card: cardNewsId로 발행 카드뉴스에서 빈 필드만 채운다(어드민 오버라이드 우선).
-    private func resolveCardNewsCard(_ section: Section) async throws -> Section {
+    private func resolveCardNewsCard(_ section: Section, market: Market) async throws -> Section {
         guard let idString = section.data.cardNewsId,
               let id = UUID(uuidString: idString),
-              let cn = try await cardNews.findPublished(id) else { return section }
+              let cn = try await cardNews.findPublished(id),
+              cn.market.visible(to: market) else { return section }
 
         var data = section.data
         if isBlank(data.title) { data.title = cn.title }
@@ -78,20 +89,21 @@ struct ScreenResolver {
     }
 
     /// tong_list: categorySlug 지정 시 승인 통으로 items 채움. 미지정이면 정적 items 유지.
-    private func resolveTongList(_ section: Section) async throws -> Section {
+    private func resolveTongList(_ section: Section, market: Market) async throws -> Section {
         guard let slug = section.data.categorySlug, !slug.isEmpty else { return section }
         let limit = section.data.limit ?? 10
-        let items = try await tongs.getApproved(category: slug, after: nil, limit: limit).map { $0.toItem() }
+        let items = try await tongs.getApproved(category: slug, market: market, after: nil, limit: limit).map { $0.toItem() }
         var data = section.data
         data.items = items
         return Section(id: section.id, type: section.type, data: data, action: section.action)
     }
 
     /// tong_card / tong_detail: 실제 통에서 비어 있는 필드만 채운다(어드민 오버라이드 우선).
-    private func resolveTongRef(_ section: Section, tongsByID: [UUID: Tong]) -> Section {
+    private func resolveTongRef(_ section: Section, tongsByID: [UUID: Tong], market: Market) -> Section {
         guard let idString = section.data.tongId,
               let id = UUID(uuidString: idString),
-              let tong = tongsByID[id] else { return section }
+              let tong = tongsByID[id],
+              tong.market.visible(to: market) else { return section }
 
         var data = section.data
         if isBlank(data.title) { data.title = tong.title }
