@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>2026 토정비결</title>
+<meta property="og:title" content="2026 토정비결" />
+<style>
+  :root {
+    --paper: #efe6d2;      /* 한지 베이지 */
+    --paper2: #e6d9bd;
+    --paper3: #f6efde;
+    --ink: #2b2016;        /* 먹색 */
+    --ink-soft: #5b4d3c;
+    --muted: #8a7a62;
+    --seal: #b6362a;       /* 주색 도장 */
+    --seal2: #94271d;
+    --line: #cdbf9f;
+    --line2: #d9cbac;
+    --gold: #9a7b3a;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(140% 80% at 50% -10%, #f4ecd9, var(--paper)),
+      var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
+    display: flex; justify-content: center;
+  }
+  /* 은은한 한지 결 */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .5;
+    background:
+      repeating-linear-gradient(0deg, rgba(120,98,60,.035) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(120,98,60,.03) 0 1px, transparent 1px 4px);
+  }
+  #app {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 480px; min-height: 100vh;
+    padding: 34px 22px calc(30px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column;
+  }
+
+  /* ── 공통 ── */
+  .brand { text-align: center; color: var(--seal); font-size: 12px; letter-spacing: 6px; font-weight: 700; margin-bottom: 10px; }
+  .hanja { font-size: 13px; letter-spacing: 3px; color: var(--muted); }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 16px 0; }
+
+  /* ── 인트로 ── */
+  .seal-stamp {
+    width: 92px; height: 92px; margin: 4px auto 16px; border-radius: 14px;
+    border: 3px solid var(--seal); color: var(--seal);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 800; box-shadow: inset 0 0 0 2px rgba(182,54,42,.25);
+    background: rgba(182,54,42,.05);
+    transform: rotate(-4deg);
+  }
+  .seal-stamp .y { font-size: 26px; line-height: 1; }
+  .seal-stamp .t { font-size: 12px; letter-spacing: 3px; margin-top: 4px; }
+  h1.title { font-size: 30px; font-weight: 800; text-align: center; margin: 2px 0 6px; letter-spacing: 1px; }
+  .subtitle { text-align: center; color: var(--ink-soft); font-size: 14px; line-height: 1.7; margin-bottom: 4px; }
+  .yearline { text-align: center; color: var(--seal); font-size: 13px; font-weight: 700; letter-spacing: 2px; margin-bottom: 22px; }
+
+  .label { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin: 0 0 9px 2px; font-weight: 600; }
+  .row { display: flex; gap: 9px; margin-bottom: 18px; }
+  .selwrap { flex: 1; position: relative; }
+  .selwrap::after {
+    content: "▾"; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none; font-size: 12px;
+  }
+  select {
+    width: 100%; appearance: none; background: var(--paper3); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 13px; padding: 15px 30px 15px 14px;
+    font-size: 16px; font-family: inherit; font-weight: 600;
+  }
+  select:focus { outline: none; border-color: var(--seal); }
+
+  .btn {
+    display: block; width: 100%; border: none; border-radius: 14px;
+    padding: 17px; font-size: 16px; font-weight: 800; cursor: pointer; margin-top: 6px;
+    font-family: inherit; letter-spacing: 2px; transition: transform .08s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: linear-gradient(180deg, var(--seal), var(--seal2)); color: #fbf3e6; box-shadow: 0 10px 24px rgba(148,39,29,.28); }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); box-shadow: none; }
+  .spacer { flex: 1; }
+  .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.6; }
+
+  /* ── 로딩 ── */
+  #loading { display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+  .loadseal {
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 3px solid var(--seal); color: var(--seal);
+    display: flex; align-items: center; justify-content: center; font-size: 54px;
+    animation: stamp 1.4s ease-in-out infinite;
+  }
+  @keyframes stamp { 0%,100% { transform: scale(.92); opacity: .7; } 50% { transform: scale(1.05); opacity: 1; } }
+  .loadtxt { margin-top: 22px; color: var(--ink-soft); font-size: 14px; letter-spacing: 1px; }
+
+  /* ── 결과 ── */
+  #result { display: none; }
+  .r-seal {
+    width: 140px; height: 140px; margin: 4px auto 14px; border-radius: 50%;
+    border: 3px solid var(--seal); background: rgba(182,54,42,.06);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 0 0 2px rgba(182,54,42,.2), 0 12px 30px rgba(43,32,22,.14);
+    position: relative;
+  }
+  .r-seal .ani { font-size: 76px; }
+  .r-gwa { text-align: center; color: var(--seal); font-size: 13px; letter-spacing: 3px; font-weight: 700; margin-top: 12px; }
+  .r-num { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 4px; margin-top: 3px; }
+  .r-title { font-size: 25px; font-weight: 800; text-align: center; margin: 8px 14px 4px; line-height: 1.35; }
+  .r-ddi { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 18px; }
+
+  .card {
+    background: var(--paper3); border: 1px solid var(--line2); border-radius: var(--radius);
+    padding: 16px 17px; margin: 0 0 12px; text-align: left; position: relative;
+    box-shadow: 0 4px 14px rgba(43,32,22,.05);
+  }
+  .card h3 {
+    margin: 0 0 8px; font-size: 13px; color: var(--seal); letter-spacing: 1px; font-weight: 800;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .card h3 .ic { font-size: 16px; }
+  .card p { margin: 0; font-size: 15px; line-height: 1.72; color: var(--ink); }
+  .half { display: flex; gap: 12px; margin: 0 0 12px; }
+  .half .card { flex: 1; margin: 0; }
+  .half .card p { font-size: 13.5px; }
+
+  .advice {
+    background: linear-gradient(180deg, rgba(182,54,42,.07), rgba(182,54,42,.03));
+    border: 1px dashed var(--seal); text-align: center;
+  }
+  .advice h3 { justify-content: center; }
+  .advice p { font-size: 16px; font-weight: 700; color: var(--seal2); line-height: 1.6; }
+
+  .disclaim { text-align: center; color: var(--muted); font-size: 11.5px; margin: 14px 0 16px; line-height: 1.6; }
+
+  .fade { animation: fade .45s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .pop { animation: pop .5s cubic-bezier(.2,.8,.3,1.2); }
+  @keyframes pop { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 인트로 -->
+  <section id="intro">
+    <div class="brand">通 通 · 신년운세</div>
+    <div class="seal-stamp">
+      <div class="y">丙午</div>
+      <div class="t">2026</div>
+    </div>
+    <h1 class="title">2026 토정비결</h1>
+    <p class="subtitle">붉은 말의 해, 병오년(丙午年).<br/>한 해의 길흉을 미리 헤아려 봅니다.</p>
+    <div class="yearline">— 生年月日을 적어 괘를 뽑으시오 —</div>
+
+    <div class="label">태어난 해</div>
+    <div class="row">
+      <div class="selwrap"><select id="y"></select></div>
+    </div>
+    <div class="label">태어난 달 · 날</div>
+    <div class="row">
+      <div class="selwrap"><select id="m"></select></div>
+      <div class="selwrap"><select id="d"></select></div>
+    </div>
+
+    <button class="btn btn-primary" id="go">괘 뽑기</button>
+    <p class="hint">병오년 한 해의 총운 · 상반기 · 하반기를<br/>전통 토정비결 방식으로 풀어 드립니다.</p>
+  </section>
+
+  <!-- 로딩 -->
+  <section id="loading">
+    <div class="loadseal">☯︎</div>
+    <div class="loadtxt" id="loadtxt">괘를 뽑는 중…</div>
+  </section>
+
+  <!-- 결과 -->
+  <section id="result">
+    <div class="brand">通 通 · 2026 토정비결</div>
+    <div class="r-seal pop"><span class="ani" id="rAni">🐴</span></div>
+    <div class="r-gwa" id="rGwa">화천대유 火天大有</div>
+    <div class="r-num" id="rNum">第 ○○○ 卦</div>
+    <h1 class="r-title" id="rTitle"></h1>
+    <div class="r-ddi" id="rDdi"></div>
+
+    <div class="card fade">
+      <h3><span class="ic">🪷</span>병오년 총운</h3>
+      <p id="rTotal"></p>
+    </div>
+
+    <div class="half">
+      <div class="card fade">
+        <h3><span class="ic">🌱</span>상반기</h3>
+        <p id="rH1"></p>
+      </div>
+      <div class="card fade">
+        <h3><span class="ic">🍂</span>하반기</h3>
+        <p id="rH2"></p>
+      </div>
+    </div>
+
+    <div class="card fade">
+      <h3><span class="ic">💰</span>재물 · 인연</h3>
+      <p id="rLuck"></p>
+    </div>
+
+    <div class="card advice fade">
+      <h3><span class="ic">🖌️</span>올해의 한 마디</h3>
+      <p id="rAdvice"></p>
+    </div>
+
+    <p class="disclaim">※ 본 풀이는 생년월일 기반 근사 계산으로 제공되는<br/>엔터테인먼트용 콘텐츠입니다. 재미로 즐겨 주세요.</p>
+    <button class="btn btn-ghost" id="again">다시 보기</button>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  var intro = document.getElementById('intro');
+  var loading = document.getElementById('loading');
+  var result = document.getElementById('result');
+
+  // 셀렉트 채우기
+  var yi = -1; // 안내 옵션
+  var ySel = document.getElementById('y'), mSel = document.getElementById('m'), dSel = document.getElementById('d');
+  var now = 2026;
+  for (var yr = now; yr >= 1930; yr--) {
+    var o = document.createElement('option'); o.value = yr; o.textContent = yr + '년 (' + ganji(yr) + '年)'; ySel.appendChild(o);
+  }
+  for (var mm = 1; mm <= 12; mm++) { var om = document.createElement('option'); om.value = mm; om.textContent = mm + '월'; mSel.appendChild(om); }
+  for (var dd = 1; dd <= 31; dd++) { var od = document.createElement('option'); od.value = dd; od.textContent = dd + '일'; dSel.appendChild(od); }
+  ySel.value = 1995; mSel.value = 5; dSel.value = 15;
+
+  var animals = ['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵','🐔','🐶','🐷'];
+  var animalKo = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+  var gan = ['갑','을','병','정','무','기','경','신','임','계'];
+  var ji  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+  function ganji(y){ return gan[(y-4)%10] + ji[(y-4)%12]; }
+  function zodiac(y){ return ((y-4)%12+12)%12; }
+
+  // 6종 분기 결과
+  var R = [
+    {
+      gwa:'지천태 地天泰', emoji:'🌅',
+      title:'동트는 새벽,\n막혔던 길이 트이는 해',
+      total:'겨우내 닫혀 있던 문이 봄볕에 활짝 열립니다. 묵은 근심은 가라앉고 새로운 기운이 차오르니, 올해는 무엇을 시작하든 순풍에 돛을 단 격입니다. 다만 들뜨지 말고 한 걸음씩 디디면 만사가 형통합니다.',
+      h1:'얼었던 일이 풀리며 귀인이 곁에 듭니다. 미뤄둔 일을 꺼내 보세요.',
+      h2:'결실이 손에 잡히는 시기. 베푼 만큼 곱절로 돌아옵니다.',
+      luck:'재물은 꾸준히 모이고, 막혔던 인연도 다시 이어집니다. 봄과 가을에 좋은 소식이 깃듭니다.',
+      advice:'문이 열렸으니, 망설이지 말고 첫발을 내딛으세요.'
+    },
+    {
+      gwa:'산천대축 山天大畜', emoji:'🌳',
+      title:'큰 나무가 뿌리를 내리니\n쌓을수록 단단해지는 해',
+      total:'서두르기보다 차곡차곡 쌓아 올리는 한 해입니다. 큰 산이 하늘의 기운을 품듯, 올해 모은 실력과 인연이 훗날 큰 그늘이 됩니다. 당장의 빠른 성취는 적어도, 내실은 그 누구보다 깊어집니다.',
+      h1:'배움과 준비의 시간. 조급함을 내려놓으면 길이 보입니다.',
+      h2:'쌓아온 것이 인정받기 시작합니다. 묵직한 기회가 찾아옵니다.',
+      luck:'재물은 저축할수록 불어나고, 오래갈 사람을 만납니다. 큰 지출은 한 박자 늦추세요.',
+      advice:'뿌리가 깊어야 바람에 흔들리지 않습니다. 기본에 충실하세요.'
+    },
+    {
+      gwa:'수풍정 水風井', emoji:'🌊',
+      title:'마르지 않는 우물,\n잔잔히 채워지는 해',
+      total:'요란하지 않아도 마르지 않는 우물처럼, 올해는 은근한 복이 끊이지 않습니다. 큰 파도는 없으나 매일의 평온이 곧 가장 큰 행운입니다. 주변을 살뜰히 돌보면 그 정성이 맑은 물로 되돌아옵니다.',
+      h1:'잔잔하지만 안정적인 흐름. 건강과 일상을 정돈하기 좋습니다.',
+      h2:'베푼 정이 인연으로 돌아옵니다. 사람으로 인한 기쁨이 큽니다.',
+      luck:'재물은 새지 않게 지키는 것이 곧 버는 것. 오랜 인연이 힘이 됩니다.',
+      advice:'고요한 물이 멀리 갑니다. 평정심이 올해의 복입니다.'
+    },
+    {
+      gwa:'화천대유 火天大有', emoji:'🔥',
+      title:'작은 불씨가 큰 빛이 되어\n온 들을 비추는 해',
+      total:'하늘 위에 불이 타오르듯, 올해는 당신의 빛이 가장 멀리 뻗어 나가는 해입니다. 노력이 드러나고 이름이 알려지며, 기다리던 기회가 잇따라 찾아옵니다. 다만 빛이 강할수록 그늘을 살피는 겸손이 복을 지킵니다.',
+      h1:'기회의 문이 연달아 열립니다. 적극적으로 손을 뻗으세요.',
+      h2:'성취와 인정이 무르익습니다. 한 해의 정점을 맞이합니다.',
+      luck:'재물운이 활짝 트이고, 빛나는 인연이 다가옵니다. 큰 결정에 길합니다.',
+      advice:'빛날수록 낮추세요. 겸손이 당신의 빛을 오래 지킵니다.'
+    },
+    {
+      gwa:'풍뢰익 風雷益', emoji:'🌸',
+      title:'봄꽃이 만개하니\n나눌수록 늘어나는 해',
+      total:'바람과 우레가 서로를 북돋듯, 올해는 나누고 협력할수록 복이 불어납니다. 혼자보다 함께일 때 운이 배가되며, 새로운 만남이 인생의 전환점이 됩니다. 받기보다 먼저 내미는 손에 더 큰 복이 깃듭니다.',
+      h1:'새 인연과 협업의 기회가 피어납니다. 마음을 열어 두세요.',
+      h2:'함께 키운 일이 꽃을 피웁니다. 나눈 만큼 풍성해집니다.',
+      luck:'재물은 사람을 통해 들어옵니다. 귀인과의 인연이 곧 복덩이입니다.',
+      advice:'먼저 베푸세요. 나눈 씨앗이 올해 가장 크게 자랍니다.'
+    },
+    {
+      gwa:'중산간 重山艮', emoji:'⛰️',
+      title:'두 산이 마주 서니\n굳건히 자리를 지키는 해',
+      total:'산이 거듭 솟아 묵직하게 멈춰 선 형국입니다. 올해는 크게 벌이기보다 자리를 지키며 때를 기다리는 해입니다. 무리한 변화는 잠시 접고 내실을 다지면, 흔들림 없는 토대 위에서 다음 도약을 준비할 수 있습니다.',
+      h1:'멈춰야 할 때를 아는 지혜가 필요합니다. 신중함이 복이 됩니다.',
+      h2:'다져둔 기반이 안정으로 돌아옵니다. 서서히 길이 열립니다.',
+      luck:'재물은 지키는 것이 우선. 인연은 오래 지켜본 뒤 깊어집니다.',
+      advice:'멈춤도 나아감입니다. 때를 기다리는 자에게 길이 열립니다.'
+    }
+  ];
+
+  function pick(){
+    var y = parseInt(ySel.value,10), m = parseInt(mSel.value,10), d = parseInt(dSel.value,10);
+    var age = now - y + 1;                 // 한국 나이
+    var z = zodiac(y);
+    // 토정비결 근사: 상괘(나이) · 중괘(달) · 하괘(날)
+    var sang = ((age + 1) % 8) + 1;
+    var jung = ((m + 1) % 6) + 1;
+    var ha   = ((d + 1) % 3) + 1;
+    var seed = age * 31 + m * 7 + d * 3 + z;
+    var idx = ((seed % R.length) + R.length) % R.length;
+    return { r: R[idx], z: z, sang: sang, jung: jung, ha: ha, age: age, ganji: ganji(y) };
+  }
+
+  function show(o){
+    var r = o.r;
+    document.getElementById('rAni').textContent = animals[o.z];
+    document.getElementById('rGwa').textContent = r.gwa;
+    document.getElementById('rNum').textContent = '第 ' + o.sang + '·' + o.jung + '·' + o.ha + ' 卦';
+    document.getElementById('rTitle').textContent = r.title;
+    document.getElementById('rDdi').textContent = o.ganji + '生 · ' + animalKo[o.z] + '띠 · ' + o.age + '세';
+    document.getElementById('rTotal').textContent = r.total;
+    document.getElementById('rH1').textContent = r.h1;
+    document.getElementById('rH2').textContent = r.h2;
+    document.getElementById('rLuck').textContent = r.luck;
+    document.getElementById('rAdvice').textContent = '" ' + r.advice + ' "';
+  }
+
+  var loadMsgs = ['괘를 뽑는 중…','상괘 · 중괘 · 하괘를 헤아립니다…','병오년의 길흉을 풀이합니다…'];
+  function run(){
+    var o = pick();
+    intro.style.display = 'none';
+    result.style.display = 'none';
+    loading.style.display = 'flex';
+    var i = 0; var lt = document.getElementById('loadtxt');
+    var iv = setInterval(function(){ i++; if(loadMsgs[i]) lt.textContent = loadMsgs[i]; }, 620);
+    setTimeout(function(){
+      clearInterval(iv);
+      loading.style.display = 'none';
+      show(o);
+      result.style.display = 'block';
+      result.classList.remove('fade'); void result.offsetWidth; result.classList.add('fade');
+      window.scrollTo(0,0);
+    }, 1900);
+  }
+
+  document.getElementById('go').addEventListener('click', run);
+  document.getElementById('again').addEventListener('click', function(){
+    result.style.display = 'none';
+    intro.style.display = 'block';
+    intro.classList.remove('fade'); void intro.offsetWidth; intro.classList.add('fade');
+    window.scrollTo(0,0);
+  });
+})();
+</script>
+</body>
+</html>

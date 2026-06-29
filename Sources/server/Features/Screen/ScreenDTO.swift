@@ -91,6 +91,8 @@ struct SectionData: Content {
 
     // tong_card (단일)
     var badge: String?
+    /// 썸네일이 없을 때 카드 fallback 비주얼용 카테고리 이모지.
+    var categoryEmoji: String?
 }
 
 struct CarouselSlide: Content {
@@ -106,6 +108,10 @@ struct TongItem: Content {
     let subtitle: String?
     let thumbnailURL: String?
     let badge: String?
+    /// 썸네일이 없을 때 카드 fallback 비주얼용 카테고리 이모지.
+    let categoryEmoji: String?
+    /// 카드 탭 시 바로 통을 열 수 있도록 번들 URL을 함께 내려준다.
+    let bundleURL: String?
 }
 
 struct CardNewsItem: Content {

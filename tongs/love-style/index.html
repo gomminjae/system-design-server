@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>나의 연애 스타일은?</title>
+<style>
+  :root {
+    --bg1: #fff1f3; --bg2: #ffe4ec; --bg3: #ffd6e7;
+    --card: #ffffff; --fg: #4a2b38; --muted: #b6899a;
+    --accent: #ff7a9c; --accent2: #ff9f7a; --coral: #ff8b8b;
+    --line: #ffe0e8; --radius: 22px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: linear-gradient(165deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
+    background-attachment: fixed;
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
+    display: flex; justify-content: center;
+  }
+  #app {
+    width: 100%; max-width: 480px; min-height: 100vh;
+    padding: 28px 22px calc(28px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; position: relative; overflow: hidden;
+  }
+  .blob { position: absolute; border-radius: 50%; filter: blur(34px); opacity: .55; z-index: 0; pointer-events: none; }
+  .blob.b1 { width: 200px; height: 200px; background: #ffc2d4; top: -60px; right: -50px; }
+  .blob.b2 { width: 170px; height: 170px; background: #ffd9b8; bottom: 40px; left: -60px; opacity: .45; }
+  .wrap { position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1; }
+
+  .top { color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .4px; margin-bottom: 2px; }
+  .top .heart { animation: beat 1.4s ease-in-out infinite; display: inline-block; }
+  @keyframes beat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} }
+
+  .count { color: var(--muted); font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+  .progress { height: 8px; background: #ffe3ec; border-radius: 99px; overflow: hidden; margin: 4px 0 30px; box-shadow: inset 0 1px 2px rgba(255,122,156,.15); }
+  .progress > i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .45s cubic-bezier(.4,0,.2,1); }
+
+  .q { font-size: 23px; font-weight: 800; line-height: 1.45; margin: 0 0 26px; letter-spacing: -.3px; }
+  .opt {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: var(--card); color: var(--fg); border: 1.5px solid var(--line);
+    border-radius: var(--radius); padding: 17px 18px; margin-bottom: 13px;
+    font-size: 16px; font-weight: 600; line-height: 1.45;
+    box-shadow: 0 6px 18px rgba(255,122,156,.10);
+    transition: transform .12s ease, border-color .18s, box-shadow .18s, background .18s;
+  }
+  .opt .ico { margin-right: 9px; }
+  .opt:active { transform: scale(.97); border-color: var(--accent); background: #fff6f8; box-shadow: 0 3px 10px rgba(255,122,156,.18); }
+
+  .spacer { flex: 1; }
+  .center { text-align: center; align-items: center; }
+  .badge { font-size: 13px; font-weight: 700; color: var(--accent); background: #fff; border: 1.5px solid var(--line); padding: 7px 16px; border-radius: 99px; box-shadow: 0 4px 12px rgba(255,122,156,.12); margin-bottom: 6px; }
+  .emoji { font-size: 92px; line-height: 1; margin: 14px 0 6px; filter: drop-shadow(0 8px 16px rgba(255,122,156,.28)); animation: pop .5s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { 0%{transform:scale(.4); opacity:0} 100%{transform:scale(1); opacity:1} }
+  .rtitle { font-size: 27px; font-weight: 900; margin: 6px 0 4px; letter-spacing: -.4px; }
+  .rsub { font-size: 15px; font-weight: 700; color: var(--accent); margin: 0 0 18px; }
+  .rdesc { color: var(--fg); font-size: 15.5px; line-height: 1.7; margin: 0 auto 20px; max-width: 360px; opacity: .85; }
+
+  .cards { width: 100%; display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
+  .ic {
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 18px;
+    padding: 14px 16px; text-align: left; display: flex; align-items: flex-start; gap: 12px;
+    box-shadow: 0 6px 16px rgba(255,122,156,.10);
+  }
+  .ic .cico { font-size: 24px; line-height: 1.3; }
+  .ic .ct { flex: 1; }
+  .ic .clabel { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: .3px; }
+  .ic .cbody { font-size: 14.5px; font-weight: 600; line-height: 1.5; margin-top: 2px; }
+
+  .btn {
+    display: block; width: 100%; border: none; border-radius: var(--radius);
+    padding: 17px; font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 11px;
+    transition: transform .12s ease, box-shadow .18s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { color: #fff; background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 10px 24px rgba(255,122,156,.34); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
+
+  .disclaim { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; opacity: .85; }
+
+  .hidden { display: none; }
+  .fade { animation: fade .35s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="wrap">
+    <div id="quiz">
+      <div class="top"><span class="heart">💗</span> 연애 심리테스트</div>
+      <div class="count" id="count"></div>
+      <div class="progress"><i id="bar"></i></div>
+      <h1 class="q" id="q"></h1>
+      <div id="opts"></div>
+    </div>
+
+    <div id="result" class="hidden center">
+      <div class="spacer"></div>
+      <div class="badge">나의 연애 동물</div>
+      <div class="emoji" id="r-emoji"></div>
+      <div class="rtitle" id="r-title"></div>
+      <p class="rsub" id="r-sub"></p>
+      <p class="rdesc" id="r-desc"></p>
+      <div class="cards" id="r-cards"></div>
+      <button class="btn btn-primary" id="share">결과 공유하기 💌</button>
+      <button class="btn btn-ghost" id="retry">다시 해보기</button>
+      <p class="disclaim">재미로 즐기는 엔터테인먼트용 콘텐츠예요 🐾</p>
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // tongstongs 브릿지 스텁. 네이티브 WebView면 postMessage, 아니면 콘솔.
+  const Tong = {
+    share(payload) { this._post("share", payload); },
+    track(event, props) { this._post("track", { event, props }); },
+    close() { this._post("close", {}); },
+    _post(type, data) {
+      const msg = JSON.stringify({ type, data });
+      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+      else console.log("[tong]", msg);
+    },
+  };
+
+  const TONG_ID = "love-style";
+
+  const questions = [
+    { q: "좋아하는 사람이 생겼다. 나는?", a: [
+      ["⚡", "티 안 내려 해도 다 들킨다. 표현이 새어나옴", "retriever"],
+      ["🌙", "절대 먼저 티 안 냄. 도도하게 관망", "cat"],
+      ["📞", "연락하고 챙기느라 하루가 다 감", "puppy"],
+      ["🍃", "좋긴 한데 내 일상이 흐트러지는 건 싫어", "bird"],
+      ["🦊", "은근슬쩍 밀당부터 시작한다", "fox"]]},
+
+    { q: "연인과의 데이트, 이상적인 그림은?", a: [
+      ["🤗", "손 꼭 잡고 종일 붙어 있기", "puppy"],
+      ["🎡", "새로운 곳 탐험하고 사진 잔뜩", "bird"],
+      ["🛋️", "각자 할 거 하다 가끔 눈 맞추는 집데이트", "cat"],
+      ["🍰", "상대가 좋아할 코스 미리 다 짜두기", "retriever"],
+      ["✨", "분위기 살짝 띄우며 두근거리게 만들기", "fox"]]},
+
+    { q: "연락 텀에 대한 나의 진심은?", a: [
+      ["💬", "자주 안 하면 불안. 자주 하고 싶다", "puppy"],
+      ["🌊", "할 말 있을 때만. 의무 연락은 노", "cat"],
+      ["📲", "상대 페이스에 맞춰주는 편", "retriever"],
+      ["🪁", "각자 시간 존중. 매여 있는 건 답답", "bird"],
+      ["🎭", "일부러 텀 조절하며 궁금하게 함", "fox"]]},
+
+    { q: "다퉜을 때 나의 모드는?", a: [
+      ["🫶", "먼저 풀려고 손 내민다. 화 오래 못 감", "retriever"],
+      ["🧊", "혼자 식힐 시간이 필요. 거리 둠", "cat"],
+      ["🥺", "끙끙 앓다가 결국 내가 맞춰준다", "puppy"],
+      ["🚪", "감정 소모 싫어 쿨하게 잠깐 떨어짐", "bird"],
+      ["♟️", "상황 보며 전략적으로 분위기 푼다", "fox"]]},
+
+    { q: "연애에서 절대 못 참는 건?", a: [
+      ["🔒", "내 자유·취미를 막는 것", "bird"],
+      ["🙈", "표현 없이 무뚝뚝한 것", "puppy"],
+      ["📢", "혼자만의 공간을 안 주는 것", "cat"],
+      ["💔", "내 마음을 당연하게 여기는 것", "retriever"],
+      ["😐", "처음의 설렘이 식어버리는 것", "fox"]]},
+  ];
+
+  const results = {
+    retriever: {
+      emoji: "🐕",
+      title: "다정한 골든리트리버",
+      sub: "사랑은 표현하는 거라 믿는 사람",
+      desc: "좋아하면 온몸으로 티가 나는 타입. 먼저 챙기고, 먼저 다가가고, 먼저 화해해요. 그 따뜻함이 상대를 가장 안심하게 만들죠.",
+      cards: [
+        ["💞", "연애 장점", "표현이 솔직해서 함께 있으면 사랑받는 게 느껴져요"],
+        ["⚠️", "주의할 점", "다 줘버리고 혼자 서운해지지 않게, 가끔은 받기도 해요"],
+        ["🎯", "찰떡 궁합", "그 마음을 알아주고 표현해주는 강아지·고양이형"]],
+    },
+    cat: {
+      emoji: "🐱",
+      title: "도도한 고양이",
+      sub: "마음은 깊지만 천천히 여는 사람",
+      desc: "쉽게 곁을 안 주지만 한 번 마음 열면 깊고 진해요. 적당한 거리와 나만의 공간이 있어야 오래 사랑할 수 있는 타입이에요.",
+      cards: [
+        ["💞", "연애 장점", "쿨해 보여도 디테일을 기억하는 은근한 다정함"],
+        ["⚠️", "주의할 점", "표현을 아끼다 오해 살 수 있으니 가끔은 솔직하게"],
+        ["🎯", "찰떡 궁합", "먼저 다가와 녹여주는 리트리버·강아지형"]],
+    },
+    puppy: {
+      emoji: "🐶",
+      title: "헌신적인 강아지",
+      sub: "한 사람에게 진심을 다 쏟는 사람",
+      desc: "좋아하면 그 사람이 세상의 중심. 연락도 챙김도 아낌없이 쏟아요. 그 순수한 진심이 가장 큰 매력이자 무기예요.",
+      cards: [
+        ["💞", "연애 장점", "변치 않는 일편단심, 함께라면 끝까지 곁을 지켜요"],
+        ["⚠️", "주의할 점", "나를 잃지 않기. 내 일상과 친구도 소중해요"],
+        ["🎯", "찰떡 궁합", "그 진심을 똑같이 돌려주는 리트리버형"]],
+    },
+    bird: {
+      emoji: "🕊️",
+      title: "자유로운 새",
+      sub: "사랑도 좋지만 나도 소중한 사람",
+      desc: "서로의 세계를 존중하는 연애를 꿈꿔요. 매이는 건 싫지만, 진짜 내 사람에겐 누구보다 넓은 하늘을 함께 날자 해요.",
+      cards: [
+        ["💞", "연애 장점", "집착 없이 쿨한 신뢰, 함께 성장하는 관계를 만들어요"],
+        ["⚠️", "주의할 점", "쿨함이 무관심처럼 보이지 않게 마음은 표현하기"],
+        ["🎯", "찰떡 궁합", "자유를 이해해주는 고양이·여우형"]],
+    },
+    fox: {
+      emoji: "🦊",
+      title: "밀당의 여우",
+      sub: "설렘을 디자인할 줄 아는 사람",
+      desc: "관계의 온도를 다룰 줄 아는 센스쟁이. 적당한 긴장과 두근거림으로 연애를 오래 설레게 만드는 매력적인 전략가예요.",
+      cards: [
+        ["💞", "연애 장점", "지루할 틈 없는 텐션, 늘 설렘이 살아있어요"],
+        ["⚠️", "주의할 점", "밀당이 과하면 진심이 흐려져요. 결정적 순간엔 솔직하게"],
+        ["🎯", "찰떡 궁합", "그 게임을 즐기면서도 중심 잡아주는 새·고양이형"]],
+    },
+  };
+
+  let step = 0;
+  const score = { retriever: 0, cat: 0, puppy: 0, bird: 0, fox: 0 };
+  const $ = (id) => document.getElementById(id);
+
+  function render() {
+    const item = questions[step];
+    $("count").textContent = "Q" + (step + 1) + " / " + questions.length;
+    $("bar").style.width = (step / questions.length) * 100 + "%";
+    $("q").textContent = item.q;
+    const opts = $("opts");
+    opts.innerHTML = "";
+    opts.classList.remove("fade"); void opts.offsetWidth; opts.classList.add("fade");
+    item.a.forEach(([ico, label, key]) => {
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.innerHTML = '<span class="ico">' + ico + '</span>' + label;
+      b.onclick = () => choose(key);
+      opts.appendChild(b);
+    });
+  }
+
+  function choose(key) {
+    score[key]++;
+    step++;
+    if (step < questions.length) render();
+    else finish();
+  }
+
+  function finish() {
+    // 동점이면 질문 순서상 먼저 나온 타입 우선
+    const order = ["retriever", "cat", "puppy", "bird", "fox"];
+    let top = order[0];
+    order.forEach((k) => { if (score[k] > score[top]) top = k; });
+    const r = results[top];
+
+    $("bar").style.width = "100%";
+    $("quiz").classList.add("hidden");
+    $("r-emoji").textContent = r.emoji;
+    $("r-title").textContent = r.title;
+    $("r-sub").textContent = r.sub;
+    $("r-desc").textContent = r.desc;
+
+    const cards = $("r-cards");
+    cards.innerHTML = "";
+    r.cards.forEach(([cico, label, body]) => {
+      const d = document.createElement("div");
+      d.className = "ic";
+      d.innerHTML = '<span class="cico">' + cico + '</span>' +
+        '<span class="ct"><span class="clabel">' + label + '</span>' +
+        '<span class="cbody">' + body + '</span></span>';
+      cards.appendChild(d);
+    });
+
+    $("result").classList.remove("hidden");
+    $("result").classList.add("fade");
+    Tong.track("result", { tongId: TONG_ID, result: top });
+
+    $("share").onclick = () =>
+      Tong.share({ tongId: TONG_ID, result: top, text: "내 연애 스타일은 " + r.title + " " + r.emoji + "! 너의 연애 동물은?" });
+    $("retry").onclick = () => location.reload();
+  }
+
+  Tong.track("start", { tongId: TONG_ID });
+  render();
+</script>
+</body>
+</html>

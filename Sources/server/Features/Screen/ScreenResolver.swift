@@ -110,6 +110,7 @@ struct ScreenResolver {
         if isBlank(data.subtitle) { data.subtitle = tong.subtitle }
         if isBlank(data.thumbnailURL) { data.thumbnailURL = tong.thumbnailURL }
         if isBlank(data.bundleURL) { data.bundleURL = tong.bundleURL }
+        if data.categoryEmoji == nil { data.categoryEmoji = CategoryEmoji.of(tong.category) }
 
         var action = section.action
         if var existing = action, isBlank(existing.bundleURL) {
@@ -145,7 +146,9 @@ extension Tong {
             title: self.title,
             subtitle: self.subtitle,
             thumbnailURL: self.thumbnailURL,
-            badge: nil
+            badge: nil,
+            categoryEmoji: CategoryEmoji.of(self.category),
+            bundleURL: self.bundleURL
         )
     }
 }
