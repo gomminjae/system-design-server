@@ -16,6 +16,13 @@ public func configure(_ app: Application) async throws {
     // 인메모리 캐시 (카탈로그·화면·버전 응답 캐싱용)
     app.caches.use(.memory)
 
+    // CORS — 웹(react-native-web) 타깃이 API를 호출할 수 있게. X-Market 커스텀 헤더 허용.
+    app.middleware.use(CORSMiddleware(configuration: .init(
+        allowedOrigin: .all,
+        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .init("X-Market")]
+    )), at: .beginning)
+
     app.migrations.add(CreateTong())
     app.migrations.add(AddTongOwnerID())
     app.migrations.add(RenameTongThumbnailColumn())
