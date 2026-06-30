@@ -1,0 +1,22 @@
+/* Cosmi(코스미) 브랜드 토큰 v1.0 — 통 템플릿·앱 공용. 상세: docs/branding.md */
+:root {
+  --cm-ink: #0E0E12;
+  --cm-surface: #17171D;
+  --cm-line: #2A2A33;
+  --cm-text: #F5F5F7;
+  --cm-muted: #9A9AA5;
+
+  --cm-accent-1: #7B8CFF;
+  --cm-accent-2: #C792FF;
+  --cm-accent: linear-gradient(135deg, var(--cm-accent-1), var(--cm-accent-2));
+
+  /* 코스미 컬러 — 결과 5속성(누적 시 너만의 성운) */
+  --cm-fire: linear-gradient(135deg, #FF5E7E, #FF9D5C);
+  --cm-water: linear-gradient(135deg, #5EC8FF, #7B8CFF);
+  --cm-forest: linear-gradient(135deg, #57E39A, #2FD0C8);
+  --cm-light: linear-gradient(135deg, #C792FF, #FF8FD0);
+  --cm-gold: linear-gradient(135deg, #FFD45E, #FF9D5C);
+
+  --cm-radius: 18px;
+  --cm-font: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+}

@@ -49,7 +49,7 @@ struct serverTests {
         try await withApp { app in
             try await app.testing().test(.GET, "catalog", afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let body = try res.content.decode(APIResponse<CursorList<TongDTO>>.self)
+                let body = try res.content.decode(APIResponse<CursorList<ProductDTO>>.self)
                 #expect(body.data.items.isEmpty)
                 #expect(body.data.hasMore == false)
             })
@@ -89,7 +89,7 @@ struct serverTests {
                 try req.content.encode(Self.sampleSubmission)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let body = try res.content.decode(APIResponse<TongDTO>.self)
+                let body = try res.content.decode(APIResponse<ProductDTO>.self)
                 #expect(body.data.title == "Test Tong")
                 #expect(body.data.status == .submitted)
             })
@@ -130,7 +130,7 @@ struct serverTests {
                 req.headers.bearerAuthorization = .init(token: tokenA)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let body = try res.content.decode(APIResponse<[TongDTO]>.self)
+                let body = try res.content.decode(APIResponse<[ProductDTO]>.self)
                 #expect(body.data.count == 1)
                 #expect(body.data.first?.title == "Test Tong")
             })
@@ -140,7 +140,7 @@ struct serverTests {
                 req.headers.bearerAuthorization = .init(token: tokenB)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let body = try res.content.decode(APIResponse<[TongDTO]>.self)
+                let body = try res.content.decode(APIResponse<[ProductDTO]>.self)
                 #expect(body.data.isEmpty)
             })
         }
@@ -265,13 +265,13 @@ struct serverTests {
     @Test("Screen resolves dynamic tong_list and category chips")
     func screenDynamicBinding() async throws {
         try await withApp { app in
-            // 승인된 personality 통 1개
-            let tong = Tong(
+            // 승인된 personality 콘텐츠 1개
+            let product = Product(
                 type: "quiz", title: "성격테스트", subtitle: "재밌음",
                 thumbnailURL: "https://img/x.png", bundleURL: "https://b/x",
                 version: "1.0", category: "personality", ageRating: "all", status: .approved
             )
-            try await tong.save(on: app.db)
+            try await product.save(on: app.db)
 
             // 발행 카드뉴스 1개(love, 3페이지)
             let cn = CardNews(title: "MBTI 카드뉴스", category: "love", status: .published, pageCount: 3)
@@ -315,7 +315,7 @@ struct serverTests {
         }
     }
 
-    private static let sampleSubmission = TongSubmission(
+    private static let sampleSubmission = ProductSubmission(
         type: "quiz",
         title: "Test Tong",
         subtitle: nil,

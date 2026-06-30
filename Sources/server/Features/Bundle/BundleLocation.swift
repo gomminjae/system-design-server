@@ -4,6 +4,6 @@ import struct Foundation.UUID
 /// - pending: 심사 전 (비공개)
 /// - published: 승인본, 버전 고정(불변)
 enum BundleLocation: Sendable {
-    case pending(tongId: UUID)
-    case published(tongId: UUID, version: String)
+    case pending(productId: UUID)
+    case published(productId: UUID, version: String)
 }

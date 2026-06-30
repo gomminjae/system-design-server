@@ -2,8 +2,8 @@ import Fluent
 import struct Foundation.UUID
 import struct Foundation.Date
 
-/// 통(Tong) 디스커버리 카테고리(주제축). 시드로 채워지고 어드민이 관리한다.
-/// 통의 `category` 필드는 이 테이블의 `slug`를 참조한다.
+/// 콘텐츠(Product) 디스커버리 카테고리(주제축). 시드로 채워지고 어드민이 관리한다.
+/// 콘텐츠의 `category` 필드는 이 테이블의 `slug`를 참조한다.
 final class Category: Model, @unchecked Sendable {
     static let schema = "categories"
 

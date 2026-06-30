@@ -6,23 +6,23 @@ struct BundleService {
     let storage: any BundleStorage
 
     /// zip 데이터를 검증하고 pending 경로에 저장한다.
-    func upload(tongId: UUID, zipData: Data) async throws -> String {
+    func upload(productId: UUID, zipData: Data) async throws -> String {
         let files = try ZipExtractor.extract(from: zipData)
 
         guard files.contains(where: { $0.path == "index.html" }) else {
             throw APIError.validation("번들 루트에 index.html이 필요합니다.")
         }
 
-        let location = BundleLocation.pending(tongId: tongId)
+        let location = BundleLocation.pending(productId: productId)
         try await storage.write(files, to: location)
 
         return storage.publicURL(location, path: "index.html")
     }
 
     /// pending 번들을 published로 승격 (심사 승인 시).
-    func promote(tongId: UUID, version: String) async throws -> String {
-        let pending = BundleLocation.pending(tongId: tongId)
-        let published = BundleLocation.published(tongId: tongId, version: version)
+    func promote(productId: UUID, version: String) async throws -> String {
+        let pending = BundleLocation.pending(productId: productId)
+        let published = BundleLocation.published(productId: productId, version: version)
 
         let pendingFiles = try await storage.list(pending)
         guard !pendingFiles.isEmpty else {
@@ -36,8 +36,8 @@ struct BundleService {
     }
 
     /// pending 번들 삭제 (반려 시 정리).
-    func cleanupPending(tongId: UUID) async throws {
-        try await storage.delete(BundleLocation.pending(tongId: tongId))
+    func cleanupPending(productId: UUID) async throws {
+        try await storage.delete(BundleLocation.pending(productId: productId))
     }
 
     /// 번들 파일 읽기 (서빙용).

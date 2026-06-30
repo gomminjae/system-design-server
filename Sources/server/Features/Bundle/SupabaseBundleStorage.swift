@@ -4,7 +4,7 @@ import Vapor
 /// Supabase Storage(REST) 기반 BundleStorage 구현체.
 ///
 /// 버킷은 **public**이어야 한다. `publicURL`이 Supabase CDN을 직접 가리켜
-/// 통 콘텐츠 다운로드가 앱 서버를 우회한다(서버 egress 0).
+/// 콘텐츠 다운로드가 앱 서버를 우회한다(서버 egress 0).
 /// 무거운 S3 SDK 대신 Vapor 내장 `Client`로 Storage REST API를 직접 호출한다.
 struct SupabaseBundleStorage: BundleStorage {
     let projectURL: String   // 예: https://xxx.supabase.co (끝 슬래시 없음)
@@ -71,10 +71,10 @@ struct SupabaseBundleStorage: BundleStorage {
 
     private func prefix(for location: BundleLocation) -> String {
         switch location {
-        case .pending(let tongId):
-            return "pending/\(tongId.uuidString)"
-        case .published(let tongId, let version):
-            return "published/\(tongId.uuidString)/v\(version)"
+        case .pending(let productId):
+            return "pending/\(productId.uuidString)"
+        case .published(let productId, let version):
+            return "published/\(productId.uuidString)/v\(version)"
         }
     }
 

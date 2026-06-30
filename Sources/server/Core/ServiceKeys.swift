@@ -16,9 +16,9 @@ extension Application {
 extension Request {
     var bundleStorage: any BundleStorage { self.application.bundleStorage }
 
-    var tongRepository: any TongRepository { FluentTongRepository(db: self.db) }
+    var productRepository: any ProductRepository { FluentProductRepository(db: self.db) }
 
-    var tongService: TongService { TongService(repository: tongRepository) }
+    var productService: ProductService { ProductService(repository: productRepository) }
 
     var categoryService: CategoryService { CategoryService(db: self.db) }
 
@@ -27,13 +27,13 @@ extension Request {
     var cardNewsService: CardNewsService { CardNewsService(repository: cardNewsRepository) }
 
     var screenResolver: ScreenResolver {
-        ScreenResolver(tongs: tongRepository, categories: categoryService, cardNews: cardNewsRepository)
+        ScreenResolver(products: productRepository, categories: categoryService, cardNews: cardNewsRepository)
     }
 
     var bundleService: BundleService { BundleService(storage: bundleStorage) }
 
     var reviewService: ReviewService {
-        ReviewService(repository: tongRepository, bundleService: bundleService)
+        ReviewService(repository: productRepository, bundleService: bundleService)
     }
 
     var userRepository: any UserRepository { FluentUserRepository(db: self.db) }

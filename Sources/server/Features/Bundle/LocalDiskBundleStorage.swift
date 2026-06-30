@@ -70,19 +70,19 @@ struct LocalDiskBundleStorage: BundleStorage {
 
     func publicURL(_ location: BundleLocation, path: String) -> String {
         switch location {
-        case .pending(let tongId):
-            return "\(baseURL)/bundles/pending/\(tongId.uuidString)/\(path)"
-        case .published(let tongId, let version):
-            return "\(baseURL)/bundles/\(tongId.uuidString)/v\(version)/\(path)"
+        case .pending(let productId):
+            return "\(baseURL)/bundles/pending/\(productId.uuidString)/\(path)"
+        case .published(let productId, let version):
+            return "\(baseURL)/bundles/\(productId.uuidString)/v\(version)/\(path)"
         }
     }
 
     private func directory(for location: BundleLocation) -> String {
         switch location {
-        case .pending(let tongId):
-            return "\(baseDirectory)/pending/\(tongId.uuidString)"
-        case .published(let tongId, let version):
-            return "\(baseDirectory)/published/\(tongId.uuidString)/v\(version)"
+        case .pending(let productId):
+            return "\(baseDirectory)/pending/\(productId.uuidString)"
+        case .published(let productId, let version):
+            return "\(baseDirectory)/published/\(productId.uuidString)/v\(version)"
         }
     }
 }

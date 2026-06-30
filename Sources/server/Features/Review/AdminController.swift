@@ -5,10 +5,10 @@ struct AdminController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let admin = routes.grouped("admin")
         admin.get(use: self.pendingReviews)
-        admin.group("tongs", ":tongID") { tong in
-            tong.post("approve", use: self.approve)
-            tong.post("reject", use: self.reject)
-            tong.post("disable", use: self.disable)
+        admin.group("products", ":productID") { product in
+            product.post("approve", use: self.approve)
+            product.post("reject", use: self.reject)
+            product.post("disable", use: self.disable)
         }
         // 화면 관리 CMS 페이지
         admin.get("screens", use: self.screensPage)
@@ -20,32 +20,32 @@ struct AdminController: RouteCollection {
 
     @Sendable
     func pendingReviews(req: Request) async throws -> View {
-        let tongs = try await req.reviewService.pendingReviews()
-        return try await req.view.render("admin/reviews", ReviewListContext(tongs: tongs)).get()
+        let products = try await req.reviewService.pendingReviews()
+        return try await req.view.render("admin/reviews", ReviewListContext(products: products)).get()
     }
 
     @Sendable
     func approve(req: Request) async throws -> Response {
-        let tongId = try req.parameters.require("tongID", as: UUID.self)
-        try await req.reviewService.approve(tongId)
-        try await req.cache.delete([TongDTO].self)
+        let productId = try req.parameters.require("productID", as: UUID.self)
+        try await req.reviewService.approve(productId)
+        try await req.cache.delete([ProductDTO].self)
         return req.redirect(to: "/admin")
     }
 
     @Sendable
     func reject(req: Request) async throws -> Response {
-        let tongId = try req.parameters.require("tongID", as: UUID.self)
+        let productId = try req.parameters.require("productID", as: UUID.self)
         let reason = try req.content.decode(RejectRequest.self).reason
-        try await req.reviewService.reject(tongId, reason: reason)
-        try await req.cache.delete([TongDTO].self)
+        try await req.reviewService.reject(productId, reason: reason)
+        try await req.cache.delete([ProductDTO].self)
         return req.redirect(to: "/admin")
     }
 
     @Sendable
     func disable(req: Request) async throws -> Response {
-        let tongId = try req.parameters.require("tongID", as: UUID.self)
-        try await req.reviewService.disable(tongId)
-        try await req.cache.delete([TongDTO].self)
+        let productId = try req.parameters.require("productID", as: UUID.self)
+        try await req.reviewService.disable(productId)
+        try await req.cache.delete([ProductDTO].self)
         return req.redirect(to: "/admin")
     }
 

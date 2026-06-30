@@ -2,12 +2,12 @@ import Fluent
 import struct Foundation.UUID
 import struct Foundation.Date
 
-/// 통(Tong) = 자기완결형 콘텐츠 한 개. Phase 0 매니페스트를 그대로 코드화한 것.
+/// 콘텐츠(Product) = 자기완결형 콘텐츠 한 개. Phase 0 매니페스트를 그대로 코드화한 것.
 /// 카탈로그(승인본)와 심사 대기본을 status 하나로 같이 다룬다.
 ///
 /// `@ID` property wrapper가 `Sendable` 체크와 충돌하므로 템플릿 관례대로 `@unchecked Sendable`로 둔다.
-final class Tong: Model, @unchecked Sendable {
-    static let schema = "tongs"
+final class Product: Model, @unchecked Sendable {
+    static let schema = "products"
 
     @ID(key: .id)
     var id: UUID?
@@ -45,7 +45,7 @@ final class Tong: Model, @unchecked Sendable {
     var market: Market
 
     @Field(key: "status")
-    var status: TongStatus
+    var status: ProductStatus
 
     /// 반려 사유 (status == .rejected 일 때 채워짐).
     @OptionalField(key: "rejection_reason")
@@ -56,7 +56,7 @@ final class Tong: Model, @unchecked Sendable {
     var submitterContact: String?
 
     /// 제출한 유저(소유자). 번들 업로드 소유자 검증·"내 제출 목록"에 쓴다.
-    /// 계정 인증 이전에 생성된 통은 nil. (FK 컬럼: owner_id)
+    /// 계정 인증 이전에 생성된 콘텐츠는 nil. (FK 컬럼: owner_id)
     /// id만 필요하면 `$owner.id`로 User 로드 없이 접근, 객체는 `.with(\.$owner)`로 eager load.
     @OptionalParent(key: "owner_id")
     var owner: User?
@@ -80,7 +80,7 @@ final class Tong: Model, @unchecked Sendable {
         category: String,
         ageRating: String,
         market: Market = .ko,
-        status: TongStatus = .submitted,
+        status: ProductStatus = .submitted,
         submitterContact: String? = nil,
         ownerID: UUID? = nil
     ) {
@@ -99,7 +99,7 @@ final class Tong: Model, @unchecked Sendable {
         self.$owner.id = ownerID
     }
 
-    func toDTO() -> TongDTO {
+    func toDTO() -> ProductDTO {
         .init(
             id: self.id,
             type: self.type,

@@ -20,7 +20,7 @@ final class CardNews: Model, @unchecked Sendable {
     @OptionalField(key: "thumbnail_url")
     var thumbnailURL: String?
 
-    /// 카테고리 slug (personality, love ...). Tong과 동일 카테고리 재사용.
+    /// 카테고리 slug (personality, love ...). Product와 동일 카테고리 재사용.
     @Field(key: "category")
     var category: String
 

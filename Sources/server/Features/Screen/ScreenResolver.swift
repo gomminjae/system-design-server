@@ -3,21 +3,21 @@ import Vapor
 /// SDUI 동적 바인딩. 저장된 섹션의 참조(categorySlug, tongId)를
 /// `GET /screens` 시점에 실제 카탈로그/카테고리 데이터로 채워(hydrate) 내려준다.
 ///
-/// - `tong_list` + `categorySlug` → 해당 카테고리 승인 통으로 items 채움
-/// - `tong_card` / `tong_detail` + `tongId` → 실제 통에서 빈 필드만 채움(어드민 입력값 우선)
+/// - `tong_list` + `categorySlug` → 해당 카테고리 승인 콘텐츠로 items 채움
+/// - `tong_card` / `tong_detail` + `tongId` → 실제 콘텐츠에서 빈 필드만 채움(어드민 입력값 우선)
 /// - `category_chips` → 항상 Category 테이블로 chips 생성
 struct ScreenResolver {
-    let tongs: any TongRepository
+    let products: any ProductRepository
     let categories: CategoryService
     let cardNews: any CardNewsRepository
 
     func resolve(_ sections: [Section], market: Market) async throws -> [Section] {
-        // card/detail이 참조하는 통 id를 모아 한 번에 조회(N+1 방지).
+        // card/detail이 참조하는 콘텐츠 id를 모아 한 번에 조회(N+1 방지).
         let referencedIDs = sections.compactMap { section -> UUID? in
             guard section.type == .tongCard || section.type == .tongDetail else { return nil }
             return section.data.tongId.flatMap(UUID.init(uuidString:))
         }
-        let tongsByID = try await tongs.approvedByIDs(referencedIDs)
+        let productsByID = try await products.approvedByIDs(referencedIDs)
 
         // 각 섹션을 병렬로 resolve (독립적인 DB 쿼리를 동시에 실행).
         let resolved = try await withThrowingTaskGroup(of: (Int, Section).self) { group in
@@ -28,7 +28,7 @@ struct ScreenResolver {
                     case .tongList:
                         result = try await resolveTongList(section, market: market)
                     case .tongCard, .tongDetail:
-                        result = resolveTongRef(section, tongsByID: tongsByID, market: market)
+                        result = resolveTongRef(section, productsByID: productsByID, market: market)
                     case .categoryChips:
                         result = try await resolveChips(section)
                     case .cardNewsList:
@@ -88,33 +88,33 @@ struct ScreenResolver {
         return Section(id: section.id, type: section.type, data: data, action: section.action)
     }
 
-    /// tong_list: categorySlug 지정 시 승인 통으로 items 채움. 미지정이면 정적 items 유지.
+    /// tong_list: categorySlug 지정 시 승인 콘텐츠로 items 채움. 미지정이면 정적 items 유지.
     private func resolveTongList(_ section: Section, market: Market) async throws -> Section {
         guard let slug = section.data.categorySlug, !slug.isEmpty else { return section }
         let limit = section.data.limit ?? 10
-        let items = try await tongs.getApproved(category: slug, market: market, after: nil, limit: limit).map { $0.toItem() }
+        let items = try await products.getApproved(category: slug, market: market, after: nil, limit: limit).map { $0.toItem() }
         var data = section.data
         data.items = items
         return Section(id: section.id, type: section.type, data: data, action: section.action)
     }
 
-    /// tong_card / tong_detail: 실제 통에서 비어 있는 필드만 채운다(어드민 오버라이드 우선).
-    private func resolveTongRef(_ section: Section, tongsByID: [UUID: Tong], market: Market) -> Section {
+    /// tong_card / tong_detail: 실제 콘텐츠에서 비어 있는 필드만 채운다(어드민 오버라이드 우선).
+    private func resolveTongRef(_ section: Section, productsByID: [UUID: Product], market: Market) -> Section {
         guard let idString = section.data.tongId,
               let id = UUID(uuidString: idString),
-              let tong = tongsByID[id],
-              tong.market.visible(to: market) else { return section }
+              let product = productsByID[id],
+              product.market.visible(to: market) else { return section }
 
         var data = section.data
-        if isBlank(data.title) { data.title = tong.title }
-        if isBlank(data.subtitle) { data.subtitle = tong.subtitle }
-        if isBlank(data.thumbnailURL) { data.thumbnailURL = tong.thumbnailURL }
-        if isBlank(data.bundleURL) { data.bundleURL = tong.bundleURL }
-        if data.categoryEmoji == nil { data.categoryEmoji = CategoryEmoji.of(tong.category) }
+        if isBlank(data.title) { data.title = product.title }
+        if isBlank(data.subtitle) { data.subtitle = product.subtitle }
+        if isBlank(data.thumbnailURL) { data.thumbnailURL = product.thumbnailURL }
+        if isBlank(data.bundleURL) { data.bundleURL = product.bundleURL }
+        if data.categoryEmoji == nil { data.categoryEmoji = CategoryEmoji.of(product.category) }
 
         var action = section.action
         if var existing = action, isBlank(existing.bundleURL) {
-            existing.bundleURL = tong.bundleURL
+            existing.bundleURL = product.bundleURL
             if isBlank(existing.tongId) { existing.tongId = idString }
             action = existing
         }
@@ -138,7 +138,7 @@ struct ScreenResolver {
     }
 }
 
-extension Tong {
+extension Product {
     /// SDUI tong_list 카드 항목으로 변환.
     func toItem() -> TongItem {
         TongItem(

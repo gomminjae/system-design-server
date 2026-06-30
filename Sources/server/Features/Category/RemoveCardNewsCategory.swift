@@ -1,7 +1,7 @@
 import Fluent
 
 /// 'cardnews' 카테고리 제거. 카드뉴스가 독립 콘텐츠 타입이 되어
-/// 더 이상 Tong의 카테고리(주제)가 아니므로 시드에서 빼고 기존 행도 삭제한다.
+/// 더 이상 Product의 카테고리(주제)가 아니므로 시드에서 빼고 기존 행도 삭제한다.
 struct RemoveCardNewsCategory: AsyncMigration {
     func prepare(on database: any Database) async throws {
         try await Category.query(on: database)

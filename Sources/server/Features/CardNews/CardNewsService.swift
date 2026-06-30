@@ -1,6 +1,6 @@
 import Vapor
 
-/// 카드뉴스 조회 비즈니스 로직. TongService.catalog와 동일한 커서 페이징 구조.
+/// 카드뉴스 조회 비즈니스 로직. ProductService.catalog와 동일한 커서 페이징 구조.
 struct CardNewsService {
     let repository: any CardNewsRepository
 
