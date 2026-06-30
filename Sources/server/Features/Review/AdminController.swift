@@ -16,6 +16,8 @@ struct AdminController: RouteCollection {
         // 카드뉴스 CMS 페이지
         admin.get("card-news", use: self.cardNewsPage)
         admin.get("card-news", ":cardNewsId", "edit", use: self.cardNewsEditPage)
+        // 콘텐츠(상품) CMS 페이지
+        admin.get("products", use: self.productsPage)
     }
 
     @Sendable
@@ -71,5 +73,10 @@ struct AdminController: RouteCollection {
     func cardNewsEditPage(req: Request) async throws -> View {
         let cardNewsId = try req.parameters.require("cardNewsId", as: String.self)
         return try await req.view.render("admin/card-news-edit", ["cardNewsId": cardNewsId]).get()
+    }
+
+    @Sendable
+    func productsPage(req: Request) async throws -> View {
+        return try await req.view.render("admin/products").get()
     }
 }

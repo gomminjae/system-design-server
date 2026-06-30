@@ -56,4 +56,5 @@ func routes(_ app: Application) throws {
     try admin.register(collection: AppAdminController())
     try admin.register(collection: ScreenAdminController())
     try admin.register(collection: CardNewsAdminController())
+    try admin.register(collection: ProductAdminController())
 }

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cosmi · 콘텐츠</title>
+  #extend("admin/styles")
+  <style>
+    .create-card { display: none; }
+    .create-card.show { display: block; }
+    .create-card .field { margin-bottom: 10px; }
+    .create-card label { display: block; font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+    .create-card input, .create-card select { width: 100%; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .p-title { font-size: 16px; font-weight: 700; }
+    .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 7px; margin-left: 6px; }
+    .tag.live { background: #e6f7ec; color: #1a9d4b; }
+    .tag.off { background: #f2f4f6; color: #8b95a1; }
+    .tag.market { background: #e8f3ff; color: #2272eb; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="logo">🌌</span> Cosmi</div>
+      <a class="nav-item" href="/admin"><span class="ico">📥</span> 심사 목록</a>
+      <a class="nav-item" href="/admin/screens"><span class="ico">📱</span> 화면 관리</a>
+      <a class="nav-item" href="/admin/card-news"><span class="ico">🗞</span> 카드뉴스</a>
+      <a class="nav-item active" href="/admin/products"><span class="ico">🪐</span> 콘텐츠</a>
+    </aside>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>콘텐츠</h1>
+          <p class="sub">테스트·운세 콘텐츠를 직접 만들어 발행해요</p>
+        </div>
+        <button class="btn btn-primary" onclick="toggleCreate()">+ 새 콘텐츠</button>
+      </div>
+
+      <div id="create-form" class="create-card card">
+        <input type="hidden" id="f-id">
+        <div class="field"><label>제목</label><input id="f-title" placeholder="예: 나는 무슨 동물일까?"></div>
+        <div class="field"><label>부제</label><input id="f-subtitle" placeholder="예: 5문항 · 1분"></div>
+        <div class="row2">
+          <div class="field"><label>카테고리</label><select id="f-category"></select></div>
+          <div class="field"><label>마켓</label><select id="f-market">
+            <option value="ko">ko (한국)</option><option value="global">global (외국)</option><option value="both">both (공용)</option>
+          </select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>타입</label><select id="f-type">
+            <option value="quiz">quiz</option><option value="game">game</option><option value="tool">tool</option><option value="fortune">fortune</option>
+          </select></div>
+          <div class="field"><label>연령</label><select id="f-age">
+            <option value="all">all</option><option value="12">12</option><option value="15">15</option><option value="17">17</option>
+          </select></div>
+        </div>
+        <div class="field"><label>번들 URL (콘텐츠 HTML 주소)</label><input id="f-bundle" placeholder="https://..."></div>
+        <div class="field"><label>버전</label><input id="f-version" value="1.0.0"></div>
+        <div style="margin-top:14px; display:flex; gap:8px;">
+          <button class="btn btn-primary" onclick="save()">저장 (발행)</button>
+          <button class="btn" onclick="toggleCreate()">취소</button>
+        </div>
+      </div>
+
+      <div id="list" class="card" style="margin-top:16px;"></div>
+    </main>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let categories = [];
+
+    async function loadCategories() {
+      const res = await fetch("/categories");
+      categories = (await res.json()).data || [];
+      $("f-category").innerHTML = categories.map(c => `<option value="${c.slug}">${c.emoji||""} ${c.name}</option>`).join("");
+    }
+
+    async function loadList() {
+      const res = await fetch("/admin/api/products");
+      const items = (await res.json()).data || [];
+      if (!items.length) { $("list").innerHTML = '<p class="sub" style="padding:8px">아직 콘텐츠가 없어요. + 새 콘텐츠로 추가하세요.</p>'; return; }
+      $("list").innerHTML = items.map(p => `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 6px; border-bottom:1px solid var(--border-soft);">
+          <div>
+            <span class="p-title">${p.title}</span>
+            <span class="tag ${p.status==='approved'?'live':'off'}">${p.status==='approved'?'발행중':p.status}</span>
+            <span class="tag market">${p.market}</span>
+            <div class="sub" style="margin-top:4px">${p.category} · ${p.type} · v${p.version}</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick='edit(${JSON.stringify(p)})'>수정</button>
+            <button class="btn" onclick="togglePublish('${p.id}')">${p.status==='approved'?'내리기':'발행'}</button>
+            <button class="btn btn-danger" onclick="del('${p.id}')">삭제</button>
+          </div>
+        </div>`).join("");
+    }
+
+    function toggleCreate() { $("create-form").classList.toggle("show"); clearForm(); }
+    function clearForm() {
+      $("f-id").value=""; $("f-title").value=""; $("f-subtitle").value="";
+      $("f-bundle").value=""; $("f-version").value="1.0.0";
+      $("f-market").value="ko"; $("f-type").value="quiz"; $("f-age").value="all";
+    }
+    function edit(p) {
+      $("create-form").classList.add("show");
+      $("f-id").value=p.id; $("f-title").value=p.title; $("f-subtitle").value=p.subtitle||"";
+      $("f-category").value=p.category; $("f-market").value=p.market; $("f-type").value=p.type;
+      $("f-age").value=p.ageRating; $("f-bundle").value=p.bundleURL; $("f-version").value=p.version;
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    async function save() {
+      const body = {
+        type: $("f-type").value, title: $("f-title").value.trim(), subtitle: $("f-subtitle").value.trim()||null,
+        bundleURL: $("f-bundle").value.trim(), version: $("f-version").value.trim()||"1.0.0",
+        category: $("f-category").value, ageRating: $("f-age").value, market: $("f-market").value,
+        status: "approved",
+      };
+      if ($("f-id").value) body.id = $("f-id").value;
+      if (!body.title || !body.bundleURL) { alert("제목과 번들 URL은 필수예요."); return; }
+      const res = await fetch("/admin/api/products", {
+        method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)
+      });
+      if (!res.ok) { alert("저장 실패: " + (await res.text())); return; }
+      toggleCreate(); loadList();
+    }
+    async function togglePublish(id) {
+      await fetch(`/admin/api/products/${id}/publish`, { method:"PUT" }); loadList();
+    }
+    async function del(id) {
+      if (!confirm("삭제할까요?")) return;
+      await fetch(`/admin/api/products/${id}`, { method:"DELETE" }); loadList();
+    }
+
+    loadCategories().then(loadList);
+  </script>
+</body>
+</html>
