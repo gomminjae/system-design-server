@@ -14,6 +14,9 @@ struct CategoryController: RouteCollection {
 
     @Sendable
     func list(req: Request) async throws -> APIResponse<[CategoryDTO]> {
+        if req.query[Bool.self, at: "hasContent"] == true {
+            return APIResponse(try await req.categoryService.listWithContent(market: req.market))
+        }
         if let cached = try await req.cache.get([CategoryDTO].self) {
             return APIResponse(cached)
         }

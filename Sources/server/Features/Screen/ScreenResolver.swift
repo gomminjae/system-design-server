@@ -30,7 +30,7 @@ struct ScreenResolver {
                     case .tongCard, .tongDetail:
                         result = resolveTongRef(section, productsByID: productsByID, market: market)
                     case .categoryChips:
-                        result = try await resolveChips(section)
+                        result = try await resolveChips(section, market: market)
                     case .cardNewsList:
                         result = try await resolveCardNewsList(section, market: market)
                     case .cardNewsCard:
@@ -122,8 +122,8 @@ struct ScreenResolver {
     }
 
     /// category_chips: 항상 Category 테이블로 chips 생성. 맨 앞에 "전체" 칩 추가.
-    private func resolveChips(_ section: Section) async throws -> Section {
-        let cats = try await categories.list()
+    private func resolveChips(_ section: Section, market: Market) async throws -> Section {
+        let cats = try await categories.listWithContent(market: market)
         var chips = [CategoryChip(id: "all", label: "전체")]
         chips.append(contentsOf: cats.map { CategoryChip(id: $0.slug, label: $0.name) })
 
