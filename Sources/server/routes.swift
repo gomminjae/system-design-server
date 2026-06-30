@@ -5,6 +5,11 @@ import VaporToOpenAPI
 func routes(_ app: Application) throws {
     app.get("health") { _ async in "ok" }
 
+    // 개인정보처리방침 (스토어 제출용 공개 URL)
+    app.get("privacy") { req async throws -> View in
+        try await req.view.render("privacy")
+    }
+
     // Swagger UI + OpenAPI JSON
     app.get("swagger", "swagger.json") { req in
         req.application.routes.openAPI(
