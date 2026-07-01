@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>나의 자아 행성</title>
+<style>
+  :root{
+    --ink:#0E0E12; --surface:#17171D; --line:#2A2A33; --fg:#F5F5F7; --muted:#9AA0AA;
+    --aura1:#7B8CFF; --aura2:#C792FF; --radius:20px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;}
+  html,body{height:100%;}
+  body{background:radial-gradient(120% 80% at 50% -10%, #1a1b2e 0%, var(--ink) 60%);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;display:flex;justify-content:center;}
+  #app{width:100%;max-width:480px;min-height:100vh;padding:28px 20px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;}
+  .top{color:var(--muted);font-size:13px;letter-spacing:.4px;}
+  .bar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin:14px 0 30px;}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--aura1),var(--aura2));transition:width .35s ease;}
+  .q{font-size:23px;font-weight:800;line-height:1.4;margin-bottom:26px;}
+  .opt{display:block;width:100%;text-align:left;cursor:pointer;background:var(--surface);color:var(--fg);
+    border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:12px;font-size:16px;line-height:1.4;
+    transition:transform .08s ease,border-color .15s;}
+  .opt:active{transform:scale(.98);border-color:var(--aura1);}
+  .spacer{flex:1;}
+  .center{text-align:center;}
+  .halo{width:150px;height:150px;border-radius:50%;margin:6px auto 6px;display:flex;align-items:center;justify-content:center;font-size:80px;
+    box-shadow:0 0 60px 6px rgba(123,140,255,.35);}
+  .rlabel{color:var(--muted);font-size:14px;margin-top:8px;}
+  .rtitle{font-size:30px;font-weight:900;margin:2px 0 12px;background:linear-gradient(90deg,var(--aura1),var(--aura2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .rdesc{color:#cfd2da;font-size:16px;line-height:1.7;max-width:360px;margin:0 auto 30px;}
+  .btn{display:block;width:100%;border:none;border-radius:var(--radius);padding:17px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;}
+  .btn-primary{background:linear-gradient(90deg,var(--aura1),var(--aura2));color:#fff;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .hidden{display:none;}
+  .fade{animation:fade .3s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="quiz">
+    <div class="top">Cosmi · 나의 자아 행성 🪐</div>
+    <div class="bar"><i id="bar"></i></div>
+    <h1 class="q" id="q"></h1>
+    <div id="opts"></div>
+  </div>
+
+  <div id="result" class="hidden center">
+    <div class="spacer"></div>
+    <div class="halo" id="r-halo"></div>
+    <div class="rlabel">나의 자아 행성은</div>
+    <div class="rtitle" id="r-title"></div>
+    <p class="rdesc" id="r-desc"></p>
+    <button class="btn btn-primary" id="share">내 행성 공유하기</button>
+    <button class="btn btn-ghost" id="retry">다시 하기</button>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<script>
+  const TONG_ID = "soul-planet";
+  const Bridge = {
+    share(payload){
+      const text = payload.text;
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({type:"share", data:payload}));
+      } else if (navigator.share) {
+        navigator.share({ title:"Cosmi — 나의 자아 행성", text, url: location.href }).catch(()=>{});
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(location.href); alert("링크를 복사했어요! 친구에게 붙여넣기 하세요 ✨");
+      }
+    },
+    track(event, props){
+      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({type:"track",data:{event,props}}));
+    }
+  };
+
+  const questions = [
+    { q:"낯선 모임에 들어섰을 때 나는?", a:[
+      ["금방 중심에 서서 분위기를 이끈다","sun"],
+      ["한 발 물러나 사람들을 관찰한다","moon"],
+      ["규칙과 흐름부터 파악한다","saturn"],
+      ["재밌어 보이면 훅 끼어든다","comet"]]},
+    { q:"쉬는 날 가장 나다운 건?", a:[
+      ["계획 세워 알차게 보낸다","saturn"],
+      ["즉흥적으로 어디론가 떠난다","comet"],
+      ["혼자 감성에 젖어 시간을 보낸다","moon"],
+      ["사람들과 왁자지껄 논다","sun"]]},
+    { q:"내 생각을 표현할 때?", a:[
+      ["나만의 색으로 독특하게","star"],
+      ["따뜻하고 균형 있게","earth"],
+      ["논리와 근거로 차분히","saturn"],
+      ["에너지 넘치게 확 끌어당긴다","sun"]]},
+    { q:"힘들 때 회복하는 법은?", a:[
+      ["혼자만의 조용한 시간","moon"],
+      ["새로운 자극·모험","comet"],
+      ["믿는 사람들과의 온기","earth"],
+      ["창작·표현으로 승화","star"]]},
+    { q:"친구들이 말하는 나는?", a:[
+      ["든든한 태양 같은 사람","sun"],
+      ["신비롭고 깊은 사람","moon"],
+      ["반짝이는 개성파","star"],
+      ["어디로 튈지 모르는 자유인","comet"]]},
+    { q:"인생에서 가장 중요한 건?", a:[
+      ["안정과 따뜻한 관계","earth"],
+      ["책임과 성취","saturn"],
+      ["나다움과 표현","star"],
+      ["영향력과 존재감","sun"]]},
+  ];
+  const results = {
+    sun:   {emoji:"☀️", title:"태양형",  bg:"radial-gradient(circle,#FFD45E,#FF8A5C)", desc:"스스로 빛나 주변을 끌어당기는 중심. 에너지와 추진력으로 사람들을 데워요. 당신이 뜨면 자리가 살아납니다."},
+    moon:  {emoji:"🌙", title:"달형",    bg:"radial-gradient(circle,#7B8CFF,#3A3F8F)", desc:"조용히 깊은 감성과 직관의 사람. 겉은 잔잔해도 안엔 넓은 바다가 있어요. 곁에 있으면 마음이 놓입니다."},
+    saturn:{emoji:"🪐", title:"토성형",  bg:"radial-gradient(circle,#C9A96A,#6E5A32)", desc:"신중하고 단단한 구조의 사람. 책임과 계획으로 궤도를 지켜요. 당신의 고리는 아무나 못 만드는 질서입니다."},
+    comet: {emoji:"☄️", title:"혜성형",  bg:"radial-gradient(circle,#5EC8FF,#7B8CFF)", desc:"어디로 튈지 모르는 자유·모험가. 스치기만 해도 강렬한 궤적을 남겨요. 예측 불가가 당신의 매력."},
+    star:  {emoji:"🌟", title:"항성형",  bg:"radial-gradient(circle,#C792FF,#FF8FD0)", desc:"자기만의 색으로 반짝이는 개성파. 남 따라 하지 않고 스스로 빛의 스펙트럼을 만들어요. 유일무이."},
+    earth: {emoji:"🌍", title:"지구형",  bg:"radial-gradient(circle,#57E39A,#2FD0C8)", desc:"따뜻함과 균형의 사람. 생명을 품는 안정감으로 관계를 지켜요. 당신 곁은 누구에게나 안식처."},
+  };
+
+  let step=0; const score={sun:0,moon:0,saturn:0,comet:0,star:0,earth:0};
+  const $=(id)=>document.getElementById(id);
+
+  function render(){
+    const item=questions[step];
+    $("bar").style.width=(step/questions.length)*100+"%";
+    $("q").textContent=item.q;
+    const opts=$("opts"); opts.innerHTML="";
+    opts.classList.remove("fade"); void opts.offsetWidth; opts.classList.add("fade");
+    item.a.forEach(([label,key])=>{
+      const b=document.createElement("button"); b.className="opt"; b.textContent=label;
+      b.onclick=()=>choose(key); opts.appendChild(b);
+    });
+  }
+  function choose(key){ score[key]++; step++; step<questions.length?render():finish(); }
+  function finish(){
+    const top=Object.keys(score).reduce((a,b)=>score[b]>score[a]?b:a);
+    const r=results[top];
+    $("bar").style.width="100%"; $("quiz").classList.add("hidden");
+    const halo=$("r-halo"); halo.style.background=r.bg; halo.textContent=r.emoji;
+    $("r-title").textContent=r.title; $("r-desc").textContent=r.desc;
+    $("result").classList.remove("hidden"); $("result").classList.add("fade");
+    Bridge.track("result",{tongId:TONG_ID,result:top});
+    $("share").onclick=()=>Bridge.share({tongId:TONG_ID,result:top,text:`내 자아 행성은 ${r.title} ${r.emoji}! 너의 행성은?`});
+    $("retry").onclick=()=>location.reload();
+  }
+  Bridge.track("start",{tongId:TONG_ID});
+  render();
+</script>
+</body>
+</html>
