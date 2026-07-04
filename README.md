@@ -1,9 +1,9 @@
-# tongstongs-server
+# cosmi-server
 
-통스통스 백엔드 API — 큐레이션형 웹 미니앱(통) 플랫폼의 서버.
+코스미(Cosmi) 백엔드 API — 큐레이션형 웹 미니앱(통) 플랫폼의 서버.
 유저가 통을 제출하면 심사 후 공개하고, 호스트 앱(RN)이 카탈로그를 소비한다.
 
-> 폴리레포: 호스트 앱·어드민 웹 등은 별도 레포(`tongstongs-app` 등).
+> 폴리레포: 호스트 앱·어드민 웹 등은 별도 레포(`cosmi-mobile` 등).
 
 ## 스택
 - **Vapor 4** (Swift 6) + **Fluent** ORM

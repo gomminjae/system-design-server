@@ -13,7 +13,7 @@ func routes(_ app: Application) throws {
     // Swagger UI + OpenAPI JSON
     app.get("swagger", "swagger.json") { req in
         req.application.routes.openAPI(
-            info: .init(title: "Tongstongs API", version: "1.0.0")
+            info: .init(title: "Cosmi API", version: "1.0.0")
         )
     }
     app.get("swagger") { req -> Response in
@@ -22,7 +22,7 @@ func routes(_ app: Application) throws {
         return Response(status: .ok, headers: headers, body: .init(string: """
         <!DOCTYPE html>
         <html><head>
-        <title>Tongstongs API</title>
+        <title>Cosmi API</title>
         <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
         </head><body>
         <div id="swagger-ui"></div>

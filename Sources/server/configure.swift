@@ -65,7 +65,7 @@ public func configure(_ app: Application) async throws {
     } else if app.environment == .production {
         fatalError("JWT_SECRET(32바이트 이상) 환경변수가 운영에 필요합니다.")
     } else {
-        jwtSecret = "dev-jwt-secret-tongstongs"
+        jwtSecret = "dev-jwt-secret-cosmi"
     }
     await app.jwt.keys.add(hmac: HMACKey(from: jwtSecret), digestAlgorithm: .sha256)
 
@@ -82,7 +82,7 @@ public func configure(_ app: Application) async throws {
 /// 환경별 데이터베이스 설정.
 /// - `.testing`: 인메모리 SQLite (격리·고속)
 /// - `DATABASE_URL` 지정: 그 URL의 Postgres (운영/클라우드)
-/// - 그 외: 로컬 Postgres (기본값: localhost / $USER / tongstongs)
+/// - 그 외: 로컬 Postgres (기본값: localhost / $USER / cosmi)
 private func configureDatabase(_ app: Application) throws {
     if app.environment == .testing {
         app.databases.use(.sqlite(.memory), as: .sqlite)
@@ -104,9 +104,9 @@ private func configureDatabase(_ app: Application) throws {
     let config = SQLPostgresConfiguration(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
         port: Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5433,
-        username: Environment.get("DATABASE_USERNAME") ?? "tongstongs",
-        password: Environment.get("DATABASE_PASSWORD") ?? "tongstongs",
-        database: Environment.get("DATABASE_NAME") ?? "tongstongs",
+        username: Environment.get("DATABASE_USERNAME") ?? "cosmi",
+        password: Environment.get("DATABASE_PASSWORD") ?? "cosmi",
+        database: Environment.get("DATABASE_NAME") ?? "cosmi",
         tls: .disable
     )
     app.databases.use(.postgres(configuration: config), as: .psql)

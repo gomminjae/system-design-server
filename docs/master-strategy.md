@@ -128,7 +128,7 @@ TikTok/IG에서 밈 영상 1개 →(호기심)→ 앱/웹의 "전체 시리즈" 
 
 | 레이어 | 결정 | 자산 |
 |---|---|---|
-| 클라이언트 | **Expo + react-native-web** → 3 플랫폼. 엔터는 발견이 소셜이라 RN 웹 SEO 약점 덜 아픔 | tongstongs-mobile에 web 타겟 이미 셋업됨 |
+| 클라이언트 | **Expo + react-native-web** → 3 플랫폼. 엔터는 발견이 소셜이라 RN 웹 SEO 약점 덜 아픔 | cosmi-mobile에 web 타겟 이미 셋업됨 |
 | 공유/OG | 동적 OG는 RN 웹이 약함 → **Vapor+Leaf가 `/share/:id` 렌더** | Leaf SSR 이미 존재 |
 | 콘텐츠 | 카드뉴스 = 밈 시리즈 | CardNews 모델·어드민 CMS **완성됨** |
 | 퀴즈/바이럴 | 통(quiz) = "이 슬랭 뜻 맞히기" → 결과공유 | Tong 도메인 재활용 |

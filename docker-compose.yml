@@ -1,14 +1,14 @@
 x-shared_environment: &shared_environment
   LOG_LEVEL: ${LOG_LEVEL:-debug}
-  DATABASE_URL: postgres://tongstongs:tongstongs@db:5432/tongstongs
+  DATABASE_URL: postgres://cosmi:cosmi@db:5432/cosmi
 
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: tongstongs
-      POSTGRES_PASSWORD: tongstongs
-      POSTGRES_DB: tongstongs
+      POSTGRES_USER: cosmi
+      POSTGRES_PASSWORD: cosmi
+      POSTGRES_DB: cosmi
     ports:
       - '5433:5432'
     volumes:
