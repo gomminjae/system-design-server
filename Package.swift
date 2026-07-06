@@ -25,6 +25,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
         // 📖 Swagger/OpenAPI 문서 자동 생성.
         .package(url: "https://github.com/dankinsoid/VaporToOpenAPI.git", from: "4.8.1"),
+        // 🔮 만세력/사주 계산 엔진 (순수 Swift).
+        .package(url: "https://github.com/Formant-Silo/SajuKit.git", branch: "main"),
     ],
     targets: [
         .executableTarget(
@@ -40,6 +42,7 @@ let package = Package(
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "JWT", package: "jwt"),
                 .product(name: "VaporToOpenAPI", package: "VaporToOpenAPI"),
+                .product(name: "SajuKit", package: "SajuKit"),
             ],
             swiftSettings: swiftSettings
         ),

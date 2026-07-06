@@ -41,6 +41,8 @@ func routes(_ app: Application) throws {
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
     try api.register(collection: ScreenController())
+    try api.register(collection: SajuController())
+    try api.register(collection: SajuReadingController())
     try app.register(collection: ShareController())
 
     // 번들 파일 서빙 (공개, HTML/JS/CSS)
