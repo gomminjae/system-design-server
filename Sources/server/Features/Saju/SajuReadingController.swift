@@ -32,8 +32,11 @@ struct SajuReadingController: RouteCollection {
             ChatMessage(role: "user", content: "아래는 이미 정확히 계산된 사주 데이터다. 이 데이터만 근거로 풀어라.\n\n" + SajuFormatter.text(result)),
         ]
 
-        // 키 없으면 조립된 프롬프트 반환 (dry-run)
+        // 키 없을 때: 운영은 프롬프트 노출 금지(준비 중), 개발은 조립 프롬프트 반환(튜닝용)
         guard let apiKey = Environment.get("OPENAI_API_KEY") else {
+            if req.application.environment == .production {
+                throw Abort(.serviceUnavailable, reason: "무당 해석 서비스 준비 중입니다.")
+            }
             return APIResponse(ReadingResponse(
                 persona: persona.name, tier: paid ? "paid" : "free",
                 dryRun: true, reading: nil, messages: messages, saju: SajuDTO(result)))
