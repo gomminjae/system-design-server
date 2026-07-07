@@ -18,6 +18,14 @@ struct SajuReadingController: RouteCollection {
     @Sendable
     func reading(req: Request) async throws -> APIResponse<ReadingResponse> {
         let body = try req.content.decode(ReadingRequest.self)
+
+        // 캐시: 같은 사주+무당+tier = 같은 답 → GPT 재호출 방지(비용 절약).
+        let i = body
+        let cacheID = "\(i.persona):\(i.tier ?? "free"):\(i.year).\(i.month).\(i.day).\(i.hour ?? -1).\(i.minute ?? -1).\(i.gender ?? "").\(i.calendar ?? "solar").\(i.leap ?? false).\(i.longitude ?? 0).\(i.applyLocalMeanTime ?? false)"
+        if let cached = try await req.cache.get(ReadingResponse.self, id: cacheID) {
+            return APIResponse(cached)
+        }
+
         guard let persona = Personas.all[body.persona] else {
             throw Abort(.badRequest, reason: "알 수 없는 무당: \(body.persona) (ghost | money)")
         }
@@ -28,8 +36,8 @@ struct SajuReadingController: RouteCollection {
         catch let error as SajuError { throw Abort(.badRequest, reason: error.message) }
 
         let messages = [
-            ChatMessage(role: "system", content: persona.system + "\n\n" + persona.instruction(paid: paid)),
-            ChatMessage(role: "user", content: "아래는 이미 정확히 계산된 사주 데이터다. 이 데이터만 근거로 풀어라.\n\n" + SajuFormatter.text(result)),
+            ChatMessage(role: "system", content: persona.system + "\n\n" + Personas.readingCraft + "\n\n" + persona.instruction(paid: paid)),
+            ChatMessage(role: "user", content: "아래는 이미 정확히 계산된 사주 데이터다. 이 데이터만 근거로 풀어라.\n\n" + SajuFormatter.ageLine(birthYear: body.year) + "\n" + SajuFormatter.text(result)),
         ]
 
         // 키 없을 때: 운영은 프롬프트 노출 금지(준비 중), 개발은 조립 프롬프트 반환(튜닝용)
@@ -42,18 +50,21 @@ struct SajuReadingController: RouteCollection {
                 dryRun: true, reading: nil, messages: messages, saju: SajuDTO(result)))
         }
 
-        let model = Environment.get("OPENAI_MODEL") ?? "gpt-4o"
+        let call: LLMCall = paid ? .full : .teaser
         let res = try await req.client.post("https://api.openai.com/v1/chat/completions") { out in
             out.headers.bearerAuthorization = .init(token: apiKey)
-            try out.content.encode(OpenAIChatRequest(model: model, messages: messages))
+            try out.content.encode(OpenAIChatRequest(model: call.model, messages: messages, maxTokens: call.maxTokens))
         }
         guard res.status == .ok else {
             throw Abort(.badGateway, reason: "OpenAI 오류: \(res.status)")
         }
         let decoded = try res.content.decode(OpenAIChatResponse.self)
-        return APIResponse(ReadingResponse(
+        let response = ReadingResponse(
             persona: persona.name, tier: paid ? "paid" : "free",
-            dryRun: false, reading: decoded.choices.first?.message.content, messages: nil, saju: SajuDTO(result)))
+            dryRun: false, reading: decoded.choices.first?.message.content, messages: nil, saju: SajuDTO(result))
+        // GPT 결과 캐시 (24h) — 다음 동일 요청은 GPT 안 부름
+        try await req.cache.set(response, id: cacheID, expiresIn: .seconds(60 * 60 * 24))
+        return APIResponse(response)
     }
 }
 
@@ -96,8 +107,49 @@ struct ReadingResponse: Content {
 struct OpenAIChatRequest: Content {
     let model: String
     let messages: [ChatMessage]
+    let maxTokens: Int?   // 출력 상한 — 무료 티저만. 유료는 nil(캡 없음). nil이면 필드 자체를 안 보냄.
+
+    enum CodingKeys: String, CodingKey {
+        case model, messages
+        case maxTokens = "max_tokens"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(model, forKey: .model)
+        try c.encode(messages, forKey: .messages)
+        try c.encodeIfPresent(maxTokens, forKey: .maxTokens)  // nil이면 생략 → OpenAI에 null 안 감
+    }
 }
 struct OpenAIChatResponse: Content {
     struct Choice: Content { struct Message: Content { let content: String }; let message: Message }
     let choices: [Choice]
+}
+
+/// LLM 호출 종류별 모델·토큰 배분 (비용관리).
+/// 무료 티저·상담은 값싼 모델(mini), 유료 전체풀이만 좋은 모델(gpt-4o).
+/// env로 오버라이드: OPENAI_MODEL_FREE / OPENAI_MODEL_PAID (없으면 OPENAI_MODEL → 기본값).
+enum LLMCall {
+    case teaser   // 무료 맛보기 — 전 방문자가 태움 → 가장 싸게, 짧게
+    case full     // 유료 전체풀이 — 결제자만, 저볼륨 → 좋은 모델, 길게
+    case consult  // 결정 상담 — 결제자당 최대 5회 → 싸게, 짧고 세게
+
+    private static func env(_ key: String) -> String? { Environment.get(key) }
+
+    var model: String {
+        switch self {
+        case .full:
+            return Self.env("OPENAI_MODEL_PAID") ?? Self.env("OPENAI_MODEL") ?? "gpt-4o"
+        case .teaser, .consult:
+            return Self.env("OPENAI_MODEL_FREE") ?? Self.env("OPENAI_MODEL") ?? "gpt-4o-mini"
+        }
+    }
+
+    /// 무료 티저만 출력 캡(전 방문자가 태우니 폭주 방지). 유료·상담은 캡 없음 — 결제자 품질 우선.
+    var maxTokens: Int? {
+        switch self {
+        case .teaser: return 500
+        case .full, .consult: return nil
+        }
+    }
 }
