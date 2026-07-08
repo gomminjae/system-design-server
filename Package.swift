@@ -25,7 +25,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
         // 📖 Swagger/OpenAPI 문서 자동 생성.
         .package(url: "https://github.com/dankinsoid/VaporToOpenAPI.git", from: "4.8.1"),
-        // 🔮 만세력/사주 계산 엔진 (순수 Swift).
+        // 🔮 만세력/사주 계산 엔진 (순수 Swift). 항상 최신 main을 바라본다.
+        // Docker 빌드는 build 단계에서 `swift package update SajuKit`으로 최신을 강제(캐시 staleness 방지) — Dockerfile 참고.
         .package(url: "https://github.com/Formant-Silo/SajuKit.git", branch: "main"),
     ],
     targets: [
