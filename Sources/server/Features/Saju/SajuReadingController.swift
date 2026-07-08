@@ -127,25 +127,27 @@ struct OpenAIChatResponse: Content {
 }
 
 /// LLM 호출 종류별 모델·토큰 배분 (비용관리).
-/// 무료 티저·상담은 값싼 모델(mini), 유료 전체풀이만 좋은 모델(gpt-4o).
-/// env로 오버라이드: OPENAI_MODEL_FREE / OPENAI_MODEL_PAID (없으면 OPENAI_MODEL → 기본값).
+/// 티저·전체풀이는 좋은 모델(gpt-4o), 상담만 값싼 모델(mini).
+/// 티저를 4o로 두는 이유: 결제를 결정하는 첫 화면이라 mini의 산발적 글리치(깨진 문장)가 소름을 깨고 이탈시킴.
+///   → 짧은 캡으로 원가는 낮게(방문자당 ~₩11), 글리치 리스크만 제거.
+/// env로 오버라이드: OPENAI_MODEL_PAID(티저·풀이) / OPENAI_MODEL_FREE(상담) / OPENAI_MODEL(전체 기본).
 enum LLMCall {
-    case teaser   // 무료 맛보기 — 전 방문자가 태움 → 가장 싸게, 짧게
+    case teaser   // 무료 맛보기 — 결제 결정 화면 → 4o(글리치 방지) + 짧은 캡
     case full     // 유료 전체풀이 — 결제자만, 저볼륨 → 좋은 모델, 길게
-    case consult  // 결정 상담 — 결제자당 최대 5회 → 싸게, 짧고 세게
+    case consult  // 결정 상담 — 결제자당 최대 5회 → 값싼 모델, 캡 없음
 
     private static func env(_ key: String) -> String? { Environment.get(key) }
 
     var model: String {
         switch self {
-        case .full:
+        case .full, .teaser:
             return Self.env("OPENAI_MODEL_PAID") ?? Self.env("OPENAI_MODEL") ?? "gpt-4o"
-        case .teaser, .consult:
+        case .consult:
             return Self.env("OPENAI_MODEL_FREE") ?? Self.env("OPENAI_MODEL") ?? "gpt-4o-mini"
         }
     }
 
-    /// 무료 티저만 출력 캡(전 방문자가 태우니 폭주 방지). 유료·상담은 캡 없음 — 결제자 품질 우선.
+    /// 티저만 출력 캡(4o라 폭주 시 원가↑ + 티저는 짧아야 전환·비용 둘 다 이득). 유료·상담은 캡 없음.
     var maxTokens: Int? {
         switch self {
         case .teaser: return 500
