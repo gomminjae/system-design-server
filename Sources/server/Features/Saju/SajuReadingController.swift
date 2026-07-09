@@ -13,22 +13,26 @@ struct SajuReadingController: RouteCollection {
                 body: .type(ReadingRequest.self),
                 response: .type(APIResponse<ReadingResponse>.self)
             )
+        // 같은 입력을 SSE로 흘려보내는 스트리밍 변형. JSON 엔드포인트와 캐시를 공유한다(tee).
+        routes.post("saju", "reading", "stream", use: self.readingStream)
+            .openAPI(
+                summary: "무당 사주 해석 (SSE 스트리밍)",
+                description: "reading과 동일 입력. text/event-stream으로 토큰을 흘림. 이벤트: `data: {\"delta\":\"…\"}` 반복 후 `data: {\"done\":true}`.",
+                body: .type(ReadingRequest.self)
+            )
     }
 
     @Sendable
     func reading(req: Request) async throws -> APIResponse<ReadingResponse> {
         let body = try req.content.decode(ReadingRequest.self)
 
-        // 캐시: 같은 사주+무당+tier = 같은 답 → GPT 재호출 방지(비용 절약).
-        let i = body
-        let cacheID = "\(i.persona):\(i.tier ?? "free"):\(i.year).\(i.month).\(i.day).\(i.hour ?? -1).\(i.minute ?? -1).\(i.gender ?? "").\(i.calendar ?? "solar").\(i.leap ?? false).\(i.longitude ?? 0).\(i.applyLocalMeanTime ?? false)"
+        // 캐시: 같은 사주+무당+tier = 같은 답 → GPT 재호출 방지(비용 절약). 스트리밍도 동일 키 공유.
+        let cacheID = Self.cacheID(for: body)
         if let cached = try await req.cache.get(ReadingResponse.self, id: cacheID) {
             return APIResponse(cached)
         }
 
-        guard let persona = Personas.all[body.persona] else {
-            throw Abort(.badRequest, reason: "알 수 없는 무당: \(body.persona) (ghost | money)")
-        }
+        let persona = try Personas.require(body.persona)
         let paid = (body.tier ?? "free") == "paid"
 
         let result: SajuResult
@@ -36,7 +40,7 @@ struct SajuReadingController: RouteCollection {
         catch let error as SajuError { throw Abort(.badRequest, reason: error.message) }
 
         let messages = [
-            ChatMessage(role: "system", content: persona.system + "\n\n" + Personas.readingCraft + "\n\n" + persona.instruction(paid: paid)),
+            ChatMessage(role: "system", content: persona.readingSystem(paid: paid)),
             ChatMessage(role: "user", content: "아래는 이미 정확히 계산된 사주 데이터다. 이 데이터만 근거로 풀어라.\n\n" + SajuFormatter.ageLine(birthYear: body.year) + "\n" + SajuFormatter.text(result)),
         ]
 
@@ -81,7 +85,7 @@ struct ReadingRequest: Content {
     let leap: Bool?
     let longitude: Double?
     let applyLocalMeanTime: Bool?
-    let persona: String   // "ghost" | "money"
+    let persona: String   // 무당 id (Personas.all) — 예: "ghost", "money"
     let tier: String?     // "free" | "paid" (기본 free)
 
     var toInput: SajuInput {

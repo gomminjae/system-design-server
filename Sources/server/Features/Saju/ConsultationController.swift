@@ -31,9 +31,7 @@ struct ConsultationController: RouteCollection {
     @Sendable
     func start(req: Request) async throws -> APIResponse<StartResponse> {
         let body = try req.content.decode(StartRequest.self)
-        guard Personas.all[body.persona] != nil else {
-            throw Abort(.badRequest, reason: "알 수 없는 무당: \(body.persona) (ghost | money)")
-        }
+        _ = try Personas.require(body.persona)
         // 입력 오류(잘못된 날짜 등)를 상담 생성 전에 조기 차단.
         do { _ = try Saju.calculate(body.toInput) }
         catch let error as SajuError { throw Abort(.badRequest, reason: error.message) }
@@ -69,16 +67,14 @@ struct ConsultationController: RouteCollection {
         guard c.questionsRemaining > 0 else {
             throw Abort(.paymentRequired, reason: "남은 질문이 없습니다.")
         }
-        guard let persona = Personas.all[c.persona] else {
-            throw Abort(.badRequest, reason: "알 수 없는 무당: \(c.persona)")
-        }
+        let persona = try Personas.require(c.persona)
 
         let result = try Saju.calculate(c.toInput)
         let prior = try await c.$turns.query(on: req.db).sort(\.$createdAt, .ascending).all()
         let currentYear = Calendar(identifier: .gregorian).component(.year, from: Date())
 
         // 프롬프트: 페르소나 + 콕 집는 심리 + 결정 상담 틀 → 사주+세운 → 이전 문답 → 이번 질문
-        let system = persona.system + "\n\n" + Personas.readingCraft + "\n\n" + Personas.consultationCraft
+        let system = persona.consultationSystem()
         var messages: [ChatMessage] = [
             ChatMessage(role: "system", content: system),
             ChatMessage(role: "user", content:
@@ -173,7 +169,7 @@ struct StartRequest: Content {
     let leap: Bool?
     let longitude: Double?
     let applyLocalMeanTime: Bool?
-    let persona: String            // "ghost" | "money"
+    let persona: String            // 무당 id (Personas.all) — 예: "ghost", "money"
     let questionsAllowed: Int?     // 결제로 채움. 없으면 기본 5.
     let orderRef: String?          // 결제 참조. 지금은 옵션.
 
