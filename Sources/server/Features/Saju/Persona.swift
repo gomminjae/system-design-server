@@ -245,6 +245,29 @@ enum SajuFormatter {
         "천살": "예상 못한 재앙 조심", "월살": "일이 막히고 마음병 들기 쉬움", "육해살": "병치레·발목 잡힐 일",
     ]
 
+    // 십성 5분류 — 자리별 십성을 모아 '분포'를 보기 위한 매핑.
+    private static let tenGodCategory: [String: String] = [
+        "비견": "비겁", "겁재": "비겁", "식신": "식상", "상관": "식상",
+        "정재": "재성", "편재": "재성", "정관": "관성", "편관": "관성",
+        "정인": "인성", "편인": "인성",
+    ]
+    // 분류가 과다(≥3)일 때의 삶 패턴 — 차트마다 다른 구체 근거(어느 사주에나 안 걸림).
+    private static let tenGodOver: [String: String] = [
+        "비겁": "형제·동료·경쟁자와 자리·재물 다툼, 내 것 뺏기는 느낌, 동업은 깨지기 쉬움, 고집으로 밀어붙이다 사람 잃음",
+        "식상": "말·재주·하고픈 말이 넘쳐 규율·상사와 부딪힘, 한곳에 못 붙고 자유분방, (여자면)자식·연애 인연 강함",
+        "재성": "돈·이성 욕심 크고 손대는 일도 많으나 벌어도 새어나감, 여러 일에 산만, 아버지·배우자 인연 복잡",
+        "관성": "책임·압박·남 시선에 눌려 삶, 규제·눈치 많고 관재구설 조심, (여자면)이성 문제 잦음",
+        "인성": "생각·궁리만 많고 실행이 늦음, 결정 미루고 어머니·남에게 기댐, 받는 데 익숙",
+    ]
+    // 분류가 부재(0)일 때의 삶 패턴 — '없는 것'이 가장 강한 콕집기 근거다.
+    private static let tenGodMissing: [String: String] = [
+        "비겁": "자기 주장·추진력이 약해 혼자 밀고 나가길 힘들어함, 형제·친구 덕 약하고 남에게 기대려 함",
+        "식상": "속말·융통성이 막혀 답답·고지식, 타고난 재주를 돈·결과로 못 바꿈, 표현이 서툴러 손해",
+        "재성": "돈을 담백하게 보거나 만질 기회가 적음, 안정적으로 모으기 어려움, (남자면)여자·처 인연 약함",
+        "관성": "조직·상사·규율에 매이면 답답해 못 견딤, 내 사업·자유직 체질, (여자면)남편 인연 약함",
+        "인성": "배움·귀인·문서 덕이 약해 스스로 부딪혀 배움, 계약·문서 실수 조심, 어머니 인연 약함",
+    ]
+
     /// 손님 현재 나이 한 줄 — 시제·나이대 앵커용. 생년 기준 대략(만 나이 근사).
     /// 이게 없으면 모델이 지나간 나이를 미래처럼 예언해 나이 든 손님에게 헛말을 한다.
     static func ageLine(birthYear: Int) -> String {
@@ -284,13 +307,49 @@ enum SajuFormatter {
         if r.advanced.dayStrength.score <= 25 { quirks.append("기운이 아주 약함 → 휘둘림·의존·자기 확신 부족") }
         let quirkLine = quirks.isEmpty ? "특이점 없음" : quirks.joined(separator: " / ")
 
+        // 십성 분포 — 일간(본인) 빼고 나머지 7자리를 5분류로 집계. 부재/과다가 이 사람만의 핵심 근거.
+        let categories = ["비겁", "식상", "재성", "관성", "인성"]
+        let tgSlots = [r.tenGods.year.stem, r.tenGods.year.branch,
+                       r.tenGods.month.stem, r.tenGods.month.branch,
+                       r.tenGods.day.branch,
+                       r.tenGods.hour.stem, r.tenGods.hour.branch]
+        var catCount = Dictionary(uniqueKeysWithValues: categories.map { ($0, 0) })
+        for slot in tgSlots { if let c = tenGodCategory[slot] { catCount[c, default: 0] += 1 } }
+        let distLine = categories.map { "\($0) \(catCount[$0] ?? 0)" }.joined(separator: " · ")
+        var tgHooks: [String] = []
+        for c in categories {
+            let n = catCount[c] ?? 0
+            if n == 0, let m = tenGodMissing[c] { tgHooks.append("· \(c) 없음 → \(m)") }
+            else if n >= 3, let m = tenGodOver[c] { tgHooks.append("· \(c) 과다(\(n)개) → \(m)") }
+        }
+        let tgHookLine = tgHooks.isEmpty ? "· 십성이 고루 분포(뚜렷한 치우침 없음)" : tgHooks.joined(separator: "\n")
+
+        // 격국 × 신강신약 결합 — 재/관을 '감당하는가'가 삶의 성패를 가른다.
+        let weak = r.advanced.dayStrength.strength == "weak"
+        let jae = catCount["재성"] ?? 0, gwan = catCount["관성"] ?? 0
+        var combo: [String] = []
+        if jae >= 2 {
+            combo.append(weak
+                ? "돈 그릇(재성)은 큰데 기운이 약해 감당이 부친다 — 벌다 잃거나 욕심이 화를 부르는 판. 버는 것보다 지키는 게 먼저."
+                : "돈 그릇(재성) 크고 감당할 힘도 있다 — 밀어붙여 벌 자리.")
+        }
+        if gwan >= 2 {
+            combo.append(weak
+                ? "책임·자리(관성)에 눌려 눈치·압박에 시달리고 건강 상하기 쉽다."
+                : "책임·자리(관성)를 감당해 조직·명예로 크는 힘이 있다.")
+        }
+        let comboLine = combo.isEmpty ? "" : " — " + combo.joined(separator: " ")
+
         return """
         ※ 아래는 쉬운 말로 요약한 것이다. 사주 용어나 한자를 그대로 옮기지 말고, 이 뜻만 네 말투로 풀어라.
         [★ 콕 집을 특이점 (여기를 근거로 구체적으로 짚어라)]
         \(quirkLine)
+        [★★ 십성 분포 — 이 사람만의 가장 강한 근거. 특히 '없는 것'과 '과한 것'을 장면으로 콕 찔러라]
+        분포: \(distLine)
+        \(tgHookLine)
         [기본] \(strength) (오행: \(five))
         [타고난 성향] 조상/부모 자리[\(tg(r.tenGods.year))], 사회 자리[\(tg(r.tenGods.month))], 본인[\(tg(r.tenGods.day))], 자식/말년 자리[\(tg(r.tenGods.hour))]
-        [사주 유형] \(geukguk[r.advanced.geukguk] ?? r.advanced.geukguk)
+        [사주 유형] \(geukguk[r.advanced.geukguk] ?? r.advanced.geukguk)\(comboLine)
         [채우면 좋은 기운] \(need.isEmpty ? "없음" : need)
         [타고난 살(신살)] \(salsLine)
         [운의 흐름] \(daeun)
