@@ -23,39 +23,9 @@ public func configure(_ app: Application) async throws {
         allowedHeaders: [.accept, .authorization, .contentType, .origin, .init("X-Market")]
     )), at: .beginning)
 
-    app.migrations.add(CreateTong())
-    app.migrations.add(AddTongOwnerID())
-    app.migrations.add(RenameTongThumbnailColumn())
-
-    // 번들 스토리지: SUPABASE_URL+SUPABASE_SERVICE_KEY 있으면 Supabase Storage(운영),
-    // 없으면 로컬 디스크(개발/테스트).
-    if let supabaseURL = Environment.get("SUPABASE_URL"),
-       let serviceKey = Environment.get("SUPABASE_SERVICE_KEY") {
-        let projectURL = supabaseURL.hasSuffix("/") ? String(supabaseURL.dropLast()) : supabaseURL
-        let bucket = Environment.get("SUPABASE_BUNDLE_BUCKET") ?? "bundles"
-        app.bundleStorage = SupabaseBundleStorage(
-            projectURL: projectURL, bucket: bucket, serviceKey: serviceKey, client: app.client)
-    } else {
-        let storageDir = app.directory.workingDirectory + "Storage/bundles"
-        let baseURL = Environment.get("BASE_URL") ?? "http://localhost:8080"
-        app.bundleStorage = LocalDiskBundleStorage(baseDirectory: storageDir, baseURL: baseURL)
-    }
-
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAppVersion())
-    app.migrations.add(CreateScreen())
-    app.migrations.add(CreateCategory())
-    app.migrations.add(SeedCategories())
-    // tongs.owner_id → users.id FK (users 생성 이후 실행돼야 함)
-    app.migrations.add(AddTongOwnerForeignKey())
-    app.migrations.add(CreateCardNews())
-    app.migrations.add(CreateCardNewsPage())
-    app.migrations.add(RemoveCardNewsCategory())
-    app.migrations.add(AddCatalogIndexes())
-    app.migrations.add(AddContentMarket())
-    // 도메인 리네임(Tong→Product)에 맞춰 라이브 테이블 tongs→products. 반드시 마지막.
-    app.migrations.add(RenameTongsToProducts())
-    // 사주 결정 상담(세션 + 문답). 독립 테이블이라 순서 무관.
+    // 사주 결정 상담(세션 + 문답).
     app.migrations.add(CreateConsultation())
 
     // JWT 서명 키. 운영은 JWT_SECRET(32바이트 이상) 필수 — 없으면 부팅 실패(fail-closed).

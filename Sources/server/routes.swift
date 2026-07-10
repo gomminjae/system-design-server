@@ -34,20 +34,11 @@ func routes(_ app: Application) throws {
 
     // 공개 JSON API — 표준 응답/에러 봉투 적용
     let api = app.grouped(APIErrorMiddleware())
-    try api.register(collection: CatalogController())
-    try api.register(collection: CategoryController())
-    try api.register(collection: CardNewsController())
-    try api.register(collection: SubmissionController())
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
-    try api.register(collection: ScreenController())
     try api.register(collection: SajuController())
     try api.register(collection: SajuReadingController())
     try api.register(collection: ConsultationController())
-    try app.register(collection: ShareController())
-
-    // 번들 파일 서빙 (공개, HTML/JS/CSS)
-    try app.register(collection: BundleServingController())
 
     // 어드민 (Leaf SSR + Basic Auth)
     let adminUser = Environment.get("ADMIN_USER") ?? "admin"
@@ -61,9 +52,5 @@ func routes(_ app: Application) throws {
         adminPassword = "dev-password"
     }
     let admin = app.grouped(AdminBasicAuthMiddleware(username: adminUser, password: adminPassword))
-    try admin.register(collection: AdminController())
     try admin.register(collection: AppAdminController())
-    try admin.register(collection: ScreenAdminController())
-    try admin.register(collection: CardNewsAdminController())
-    try admin.register(collection: ProductAdminController())
 }
