@@ -69,6 +69,7 @@ extension SajuReadingController {
         return Self.sse { writer in
             var full = ""
             var lineBuf = ""       // 청크가 SSE 라인 중간에서 끊길 수 있어 라인 조립용
+            var pending = ""       // 토큰을 모아 '줄' 단위로만 내보내기 위한 콘텐츠 버퍼(한 글자씩 타이핑 방지)
             var clientGone = false
 
             for try await chunk in openai.body {
@@ -78,14 +79,22 @@ extension SajuReadingController {
                     lineBuf = String(lineBuf[lineBuf.index(after: nl)...])
                     guard let delta = Self.parseSSELine(line) else { continue }
                     full += delta
-                    if !clientGone {
+                    pending += delta
+                    // 콘텐츠에 개행이 생길 때마다 그 줄까지(개행 포함) 한 번에 flush → 클라는 한 줄씩 받는다.
+                    while !clientGone, let cnl = pending.firstIndex(of: "\n") {
+                        let lineOut = String(pending[...cnl])
+                        pending = String(pending[pending.index(after: cnl)...])
                         // 클라가 끊기면 쓰기만 멈추고 OpenAI는 끝까지 받아 캐시에 남긴다(tee).
-                        do { try await Self.send(writer, .init(delta: delta)) }
+                        do { try await Self.send(writer, .init(delta: lineOut)) }
                         catch { clientGone = true }
                     }
                 }
             }
 
+            // 마지막 줄은 개행이 없을 수 있으니 남은 버퍼를 마저 내보낸다.
+            if !clientGone, !pending.isEmpty {
+                try? await Self.send(writer, .init(delta: pending))
+            }
             if !clientGone { try? await Self.send(writer, .init(done: true)) }
 
             // tee: 완성 텍스트를 JSON 엔드포인트와 같은 키로 캐시(24h) → 다음 동일 요청은 GPT 안 부름.
