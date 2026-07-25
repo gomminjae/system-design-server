@@ -15,7 +15,7 @@ struct AdminBasicAuthMiddleware: AsyncMiddleware {
         }
 
         var headers = HTTPHeaders()
-        headers.replaceOrAdd(name: "WWW-Authenticate", value: "Basic realm=\"cosmi admin\"")
+        headers.replaceOrAdd(name: "WWW-Authenticate", value: "Basic realm=\"admin\"")
         return Response(status: .unauthorized, headers: headers, body: .init(string: "인증이 필요합니다."))
     }
 }

@@ -2,16 +2,12 @@ import Fluent
 import FluentPostgresDriver
 import FluentSQLiteDriver
 import JWTKit
-import Leaf
 import NIOSSL
 import Vapor
 
 // configures your application
 public func configure(_ app: Application) async throws {
     try configureDatabase(app)
-
-    // Leaf를 뷰 렌더러로 사용 (어드민 SSR 페이지용)
-    app.views.use(.leaf)
 
     // 인메모리 캐시 (카탈로그·화면·버전 응답 캐싱용)
     app.caches.use(.memory)
@@ -25,8 +21,6 @@ public func configure(_ app: Application) async throws {
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAppVersion())
-    // 사주 결정 상담(세션 + 문답).
-    app.migrations.add(CreateConsultation())
 
     // JWT 서명 키. 운영은 JWT_SECRET(32바이트 이상) 필수 — 없으면 부팅 실패(fail-closed).
     // ⚠️ 소셜 로그인을 붙일 때는 이 자체검증을 Supabase Auth JWT(JWKS) 검증으로 교체할 것.
@@ -37,7 +31,7 @@ public func configure(_ app: Application) async throws {
     } else if app.environment == .production {
         fatalError("JWT_SECRET(32바이트 이상) 환경변수가 운영에 필요합니다.")
     } else {
-        jwtSecret = "dev-jwt-secret-cosmi"
+        jwtSecret = "dev-jwt-secret-local-only"
     }
     await app.jwt.keys.add(hmac: HMACKey(from: jwtSecret), digestAlgorithm: .sha256)
 
@@ -54,7 +48,7 @@ public func configure(_ app: Application) async throws {
 /// 환경별 데이터베이스 설정.
 /// - `.testing`: 인메모리 SQLite (격리·고속)
 /// - `DATABASE_URL` 지정: 그 URL의 Postgres (운영/클라우드)
-/// - 그 외: 로컬 Postgres (기본값: localhost / $USER / cosmi)
+/// - 그 외: 로컬 Postgres (기본값: localhost / app / app)
 private func configureDatabase(_ app: Application) throws {
     if app.environment == .testing {
         app.databases.use(.sqlite(.memory), as: .sqlite)
@@ -76,9 +70,9 @@ private func configureDatabase(_ app: Application) throws {
     let config = SQLPostgresConfiguration(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
         port: Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5433,
-        username: Environment.get("DATABASE_USERNAME") ?? "cosmi",
-        password: Environment.get("DATABASE_PASSWORD") ?? "cosmi",
-        database: Environment.get("DATABASE_NAME") ?? "cosmi",
+        username: Environment.get("DATABASE_USERNAME") ?? "app",
+        password: Environment.get("DATABASE_PASSWORD") ?? "app",
+        database: Environment.get("DATABASE_NAME") ?? "app",
         tls: .disable
     )
     app.databases.use(.postgres(configuration: config), as: .psql)

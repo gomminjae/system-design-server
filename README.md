@@ -1,42 +1,45 @@
-# cosmi-server
+# system-design-server
 
-코스미(Cosmi) 백엔드 API — 큐레이션형 웹 미니앱(통) 플랫폼의 서버.
-유저가 통을 제출하면 심사 후 공개하고, 호스트 앱(RN)이 카탈로그를 소비한다.
+모바일 시스템 디자인 공부용 백엔드 (Swift / Vapor 4).
 
-> 폴리레포: 호스트 앱·어드민 웹 등은 별도 레포(`cosmi-mobile` 등).
+모바일 앱을 클라이언트로 가정하고, 백엔드 시스템 디자인 주제를 하나씩 실제 코드로 구현해보는 실험장.
 
 ## 스택
-- **Vapor 4** (Swift 6) + **Fluent** ORM
-- DB: **SQLite**(로컬) → Postgres(운영 예정)
-- 어드민: **Leaf** SSR + Basic Auth
-- 번들 스토리지(예정): 로컬 디스크 → Cloudflare R2
 
-## 폴더링 (기능별)
-```
-Sources/server/
-├── Features/
-│   ├── Tong/      # 모델·DTO·마이그레이션·공개 API(Catalog/Submission)
-│   └── Admin/     # 심사 백오피스(Leaf) + Basic Auth
-├── Core/          # 공통 인프라: APIResponse / APIError 봉투·미들웨어
-├── configure.swift · routes.swift · entrypoint.swift
-Resources/Views/   # Leaf 템플릿
-```
+- Swift 6 / Vapor 4 / Fluent (Postgres, 테스트는 인메모리 SQLite)
+- JWT 인증 (Apple Sign In 검증 + 자체 토큰 발급)
+- OpenAPI 자동 생성 (`/swagger`)
 
-## API
-**공개 (JSON, 응답 봉투 `{data}` / `{error}`)**
-- `GET  /catalog` — 승인된 통 목록
-- `POST /submissions` — 통 제출 (status=submitted)
+## 현재 구현된 것
 
-**어드민 (Leaf, Basic Auth)**
-- `GET  /admin` — 심사 대시보드
-- `POST /admin/tongs/:id/approve|reject|disable`
+| 영역 | 내용 |
+|---|---|
+| Auth | Apple Sign In → 자체 JWT 발급, `JWTAuthMiddleware` |
+| App | 앱 버전 체크 API (`GET /app/version`) — 강제 업데이트 판단용 min/latest 버전, 인메모리 캐시 |
+| Admin | Basic Auth로 보호되는 `/admin/*` (버전 정보 upsert) |
+| Core | 표준 API 응답/에러 봉투, 에러 미들웨어, 타입 기반 캐시 키 헬퍼 |
 
 ## 실행
-```bash
-swift run                 # localhost:8080
-curl localhost:8080/health
-```
-어드민 자격증명은 환경변수로: `ADMIN_USER` / `ADMIN_PASSWORD` (미설정 시 개발 기본값).
 
-## 상태
-초기 골격(Tong 도메인 + 어드민 + 응답 봉투). 어드민 대시보드(index)·파일 업로드·테스트 정리 진행 중.
+```bash
+# 로컬 Postgres 포함 전체 실행
+docker compose up
+
+# 또는 로컬 빌드로 실행 (Postgres는 docker compose up db)
+make serve      # swift run server serve --port 8080
+make swagger    # Swagger UI 열기
+```
+
+테스트:
+
+```bash
+swift test
+```
+
+## 환경변수
+
+| 변수 | 설명 |
+|---|---|
+| `DATABASE_URL` | Postgres URL (없으면 localhost 기본값) |
+| `JWT_SECRET` | 32바이트 이상, production 필수 |
+| `ADMIN_USER` / `ADMIN_PASSWORD` | 어드민 Basic Auth, production 필수 |

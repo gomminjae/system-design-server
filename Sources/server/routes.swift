@@ -5,15 +5,10 @@ import VaporToOpenAPI
 func routes(_ app: Application) throws {
     app.get("health") { _ async in "ok" }
 
-    // 개인정보처리방침 (스토어 제출용 공개 URL)
-    app.get("privacy") { req async throws -> View in
-        try await req.view.render("privacy")
-    }
-
     // Swagger UI + OpenAPI JSON
     app.get("swagger", "swagger.json") { req in
         req.application.routes.openAPI(
-            info: .init(title: "Cosmi API", version: "1.0.0")
+            info: .init(title: "System Design Server API", version: "1.0.0")
         )
     }
     app.get("swagger") { req -> Response in
@@ -22,7 +17,7 @@ func routes(_ app: Application) throws {
         return Response(status: .ok, headers: headers, body: .init(string: """
         <!DOCTYPE html>
         <html><head>
-        <title>Cosmi API</title>
+        <title>System Design Server API</title>
         <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
         </head><body>
         <div id="swagger-ui"></div>
@@ -36,11 +31,8 @@ func routes(_ app: Application) throws {
     let api = app.grouped(APIErrorMiddleware())
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
-    try api.register(collection: SajuController())
-    try api.register(collection: SajuReadingController())
-    try api.register(collection: ConsultationController())
 
-    // 어드민 (Leaf SSR + Basic Auth)
+    // 어드민 (Basic Auth)
     let adminUser = Environment.get("ADMIN_USER") ?? "admin"
     let adminPassword: String
     if let pw = Environment.get("ADMIN_PASSWORD") {

@@ -1,4 +1,4 @@
-.PHONY: serve stop ports swagger build clean db-reset
+.PHONY: serve stop ports swagger build clean
 
 serve:
 	swift run server serve --port 8080
@@ -17,6 +17,3 @@ build:
 
 clean:
 	swift package clean
-
-db-reset:
-	@rm -f db.sqlite && echo "DB 초기화 완료"

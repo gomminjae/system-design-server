@@ -8,7 +8,6 @@ DerivedData/
 # Runtime / secrets
 .env
 .env.*
-db.sqlite
 Storage/
 
 # Tooling
@@ -21,6 +20,3 @@ Storage/
 
 # MCP 서버 설정 (project_ref 포함 — 시크릿 인접 방지)
 .mcp.json
-
-# 로컬 SajuKit 심링크(머신 절대경로 — 커밋 금지)
-Packages/
