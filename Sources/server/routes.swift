@@ -31,6 +31,7 @@ func routes(_ app: Application) throws {
     let api = app.grouped(APIErrorMiddleware())
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
+    try api.register(collection: SearchController())
 
     // 어드민 (Basic Auth)
     let adminUser = Environment.get("ADMIN_USER") ?? "admin"
