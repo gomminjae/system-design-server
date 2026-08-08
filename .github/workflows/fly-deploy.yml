@@ -29,6 +29,7 @@ jobs:
           FLY_ORG: ${{ secrets.FLY_ORG }}
         run: |
           app_name="tongstongs-server"
+          flyctl auth whoami
           apps_json="$(flyctl apps list --json)"
           if printf '%s' "$apps_json" | jq -e --arg app "$app_name" \
             'any(.[]?; ((.Name // .name) == $app))' >/dev/null; then
@@ -37,11 +38,8 @@ jobs:
           fi
 
           echo "Fly app $app_name is missing; creating it."
-          if [ -n "$FLY_ORG" ]; then
-            flyctl apps create "$app_name" --org "$FLY_ORG" --yes
-          else
-            flyctl apps create "$app_name" --yes
-          fi
+          fly_org="${FLY_ORG:-personal}"
+          flyctl apps create "$app_name" --org "$fly_org" --yes
       - name: Sync Fly.io runtime secrets
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
