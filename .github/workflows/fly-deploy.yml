@@ -50,7 +50,19 @@ jobs:
         run: |
           app_name="tongstongs-server"
           echo "Fly app $app_name is missing; creating it."
-          fly_org="${FLY_ORG:-personal}"
+          if [ -n "$FLY_ORG" ]; then
+            fly_org="$FLY_ORG"
+          else
+            orgs_json="$(flyctl orgs list --json)"
+            fly_org="$(printf '%s' "$orgs_json" | jq -r \
+              '.[0].Slug // .[0].slug // .[0].Name // .[0].name // empty')"
+          fi
+          if [ -z "$fly_org" ]; then
+            echo "No Fly.io organization is available for this token."
+            echo "Set the FLY_ORG secret to the target organization slug."
+            exit 1
+          fi
+          echo "Using Fly organization: $fly_org"
           flyctl apps create "$app_name" --org "$fly_org" --yes
       - name: Sync Fly.io runtime secrets
         env:
