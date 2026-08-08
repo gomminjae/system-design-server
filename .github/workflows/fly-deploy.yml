@@ -23,13 +23,16 @@ jobs:
             echo "FLY_API_TOKEN is not available in the production Environment or repository secrets."
             exit 1
           fi
+      - name: Verify Fly.io account access
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl auth whoami
       - name: Ensure Fly.io app exists
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           FLY_ORG: ${{ secrets.FLY_ORG }}
         run: |
           app_name="tongstongs-server"
-          flyctl auth whoami
           apps_json="$(flyctl apps list --json)"
           if printf '%s' "$apps_json" | jq -e --arg app "$app_name" \
             'any(.[]?; ((.Name // .name) == $app))' >/dev/null; then
