@@ -28,18 +28,27 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: flyctl auth whoami
       - name: Ensure Fly.io app exists
+        id: check_app
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_ORG: ${{ secrets.FLY_ORG }}
         run: |
           app_name="tongstongs-server"
           apps_json="$(flyctl apps list --json)"
           if printf '%s' "$apps_json" | jq -e --arg app "$app_name" \
             'any(.[]?; ((.Name // .name) == $app))' >/dev/null; then
             echo "Fly app $app_name is available."
-            exit 0
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Fly app $app_name is missing."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-
+      - name: Create missing Fly.io app
+        if: steps.check_app.outputs.exists != 'true'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_ORG: ${{ secrets.FLY_ORG }}
+        run: |
+          app_name="tongstongs-server"
           echo "Fly app $app_name is missing; creating it."
           fly_org="${FLY_ORG:-personal}"
           flyctl apps create "$app_name" --org "$fly_org" --yes
