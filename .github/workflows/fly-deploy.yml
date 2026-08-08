@@ -23,6 +23,57 @@ jobs:
             echo "FLY_API_TOKEN is not available in the production Environment or repository secrets."
             exit 1
           fi
+      - name: Ensure Fly.io app exists
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_ORG: ${{ secrets.FLY_ORG }}
+        run: |
+          app_name="tongstongs-server"
+          apps_json="$(flyctl apps list --json)"
+          if printf '%s' "$apps_json" | jq -e --arg app "$app_name" \
+            'any(.[]?; ((.Name // .name) == $app))' >/dev/null; then
+            echo "Fly app $app_name is available."
+            exit 0
+          fi
+
+          echo "Fly app $app_name is missing; creating it."
+          if [ -n "$FLY_ORG" ]; then
+            flyctl apps create "$app_name" --org "$FLY_ORG" --yes
+          else
+            flyctl apps create "$app_name" --yes
+          fi
+      - name: Sync Fly.io runtime secrets
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ADMIN_USER: ${{ secrets.ADMIN_USER }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          app_name="tongstongs-server"
+          secret_args=()
+          [ -n "$DATABASE_URL" ] && secret_args+=("DATABASE_URL=$DATABASE_URL")
+          [ -n "$JWT_SECRET" ] && secret_args+=("JWT_SECRET=$JWT_SECRET")
+          [ -n "$ADMIN_USER" ] && secret_args+=("ADMIN_USER=$ADMIN_USER")
+          [ -n "$ADMIN_PASSWORD" ] && secret_args+=("ADMIN_PASSWORD=$ADMIN_PASSWORD")
+
+          if [ "${#secret_args[@]}" -gt 0 ]; then
+            flyctl secrets set --app "$app_name" "${secret_args[@]}"
+          fi
+
+          secrets_json="$(flyctl secrets list --app "$app_name" --json)"
+          missing=()
+          for key in DATABASE_URL JWT_SECRET ADMIN_PASSWORD; do
+            if ! printf '%s' "$secrets_json" | jq -e --arg key "$key" \
+              'any(.[]?; ((.Name // .name) == $key))' >/dev/null; then
+              missing+=("$key")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing Fly runtime secrets: ${missing[*]}"
+            echo "Add them to the production GitHub Environment or set them with flyctl secrets set."
+            exit 1
+          fi
       # Swift release 빌드는 기본 원격 빌더 메모리를 초과할 수 있어 Depot 빌더를 사용한다.
       - run: flyctl deploy --depot
         env:
