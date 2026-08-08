@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      # Swift release 빌드는 기본 원격 빌더 메모리를 초과할 수 있어 Depot 빌더를 사용한다.
+      - run: flyctl deploy --depot
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
