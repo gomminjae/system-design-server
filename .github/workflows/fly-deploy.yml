@@ -63,7 +63,17 @@ jobs:
             exit 1
           fi
           echo "Using Fly organization: $fly_org"
-          flyctl apps create "$app_name" --org "$fly_org" --yes
+          set +e
+          create_output="$(flyctl apps create "$app_name" --org "$fly_org" --yes 2>&1)"
+          create_status=$?
+          set -e
+          if [ "$create_status" -ne 0 ]; then
+            safe_output="$(printf '%s' "$create_output" | tr '\r\n' '  ' | \
+              sed 's/%/%25/g; s/::/%3A%3A/g')"
+            echo "::error title=Fly app creation failed::$safe_output"
+            printf '%s\n' "$create_output"
+            exit "$create_status"
+          fi
       - name: Sync Fly.io runtime secrets
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
