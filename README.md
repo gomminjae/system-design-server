@@ -84,6 +84,9 @@ make swagger    # Swagger UI 열기
 swift test
 ```
 
+`main`에 push하면 GitHub Actions가 Fly.io의 `tongstongs-server`에 원격 빌드·배포한다.
+배포 전 `migrate --env production --yes` release command가 실행되고, 배포 후 `/health`로 상태를 확인한다.
+
 ## 환경변수
 
 | 변수 | 설명 |
