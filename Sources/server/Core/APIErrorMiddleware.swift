@@ -1,7 +1,7 @@
 import Vapor
 
 /// JSON API 그룹에서 던져진 에러를 표준 봉투(APIErrorResponse)로 변환한다.
-/// 어드민(Leaf/HTML)에는 적용하지 않는다 — JSON API 그룹에만 붙인다.
+/// 어드민 HTML에는 적용하지 않는다 — JSON API 그룹에만 붙인다.
 struct APIErrorMiddleware: AsyncMiddleware {
     func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
         do {

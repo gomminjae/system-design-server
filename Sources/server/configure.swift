@@ -12,17 +12,25 @@ public func configure(_ app: Application) async throws {
     // 인메모리 캐시 (카탈로그·화면·버전 응답 캐싱용)
     app.caches.use(.memory)
 
-    // CORS — 웹(react-native-web) 타깃이 API를 호출할 수 있게. X-Market 커스텀 헤더 허용.
+    // CORS — 웹(react-native-web) 타깃이 API를 호출할 수 있게. 앱 컨텍스트 헤더 허용.
     app.middleware.use(CORSMiddleware(configuration: .init(
         allowedOrigin: .all,
         allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS],
-        allowedHeaders: [.accept, .authorization, .contentType, .origin, .init("X-Market")]
+        allowedHeaders: [
+            .accept,
+            .authorization,
+            .contentType,
+            .origin,
+            .init("X-Market"),
+            .init("X-SDUI-Catalog-Version"),
+        ]
     )), at: .beginning)
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAppVersion())
     app.migrations.add(CreateMovie())
     app.migrations.add(CreateSearchLog())
+    app.migrations.add(CreateSDUICMS())
 
     app.asyncCommands.use(SeedMoviesCommand(), as: "seed-movies")
 

@@ -22,4 +22,12 @@ struct APIError: Error, AbortError {
     static func forbidden(_ message: String = "권한이 없습니다.") -> APIError {
         .init(status: .forbidden, code: "forbidden", reason: message)
     }
+
+    static func preconditionFailed(code: String, message: String) -> APIError {
+        .init(status: .preconditionFailed, code: code, reason: message)
+    }
+
+    static func internalServerError(_ message: String = "서버 오류가 발생했어요.") -> APIError {
+        .init(status: .internalServerError, code: "internal_error", reason: message)
+    }
 }

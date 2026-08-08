@@ -32,6 +32,7 @@ func routes(_ app: Application) throws {
     try api.register(collection: AuthController())
     try api.register(collection: AppController())
     try api.register(collection: SearchController())
+    try api.register(collection: SDUIController())
 
     // 어드민 (Basic Auth)
     let adminUser = Environment.get("ADMIN_USER") ?? "admin"
@@ -46,4 +47,5 @@ func routes(_ app: Application) throws {
     }
     let admin = app.grouped(AdminBasicAuthMiddleware(username: adminUser, password: adminPassword))
     try admin.register(collection: AppAdminController())
+    try admin.register(collection: SDUICMSController())
 }
